@@ -41,18 +41,20 @@
 
   // Belohnungen: nett, aber nicht zu stark
   var RW = {
-    d: [{ t: 'coins', s: 600 }, { t: 'box', s: 1500 }, { t: 'boost', s: 600 }, { t: 'deko', r: 'r' }],
-    w: [{ t: 'coins', s: 5400 }, { t: 'box', s: 9000 }, { t: 'boost', s: 1800 }, { t: 'card' }, { t: 'deko', r: 'e' }]
+    d: [{ t: 'coins', s: 300 }, { t: 'box', s: 1500 }, { t: 'boost', s: 600 }, { t: 'deko', r: 'c' }],
+    w: [{ t: 'coins', s: 2700 }, { t: 'box', s: 9000 }, { t: 'boost', s: 1200 }, { t: 'card' }, { t: 'deko', r: 'r' }]
   };
-  var BONUS = { d: [{ t: 'box', s: 3600 }], w: [{ t: 'card' }, { t: 'deko', r: 'l' }] };
+  var BONUS = { d: [{ t: 'box', s: 3600 }], w: [{ t: 'card' }, { t: 'deko', r: 'e' }] };
 
   function baseInc() { return G.fullIncome() / G.boostMult(); }
   function nice(x) { if (x < 100) return Math.ceil(x); var p = Math.pow(10, Math.floor(Math.log10(x)) - 1); return Math.ceil(x / p) * p; }
   // beste freigeschaltete Kiste, die höchstens so viel kostet wie s Sekunden Geld
+  // Kai: nicht zu stark! Täglich 3 Stufen unter der besten Kiste (Galaxie -> Gold), wöchentlich 2 Stufen darunter
   function boxFor(s) {
-    var lim = baseInc() * s, best = 'holz';
-    SI.BOX.forEach(function (b) { if (!b.ev && G.boxUnlocked(b.k) && b.cost <= lim) best = b.k; });
-    return best;
+    var lim = baseInc() * s, list = SI.BOX.filter(function (b) { return !b.ev && G.boxUnlocked(b.k); });
+    var top = Math.max(0, list.length - 1 - (s >= 9000 ? 2 : 3)), best = 0;
+    list.forEach(function (b, i) { if (i <= top && b.cost <= lim) best = i; });
+    return list[best].k;
   }
   function weekId() {
     var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Montag
@@ -64,7 +66,6 @@
   function makeRw(p, used) {
     var pool = RW[p].filter(function (r) { return used.indexOf(r.t) < 0; });
     var r = JSON.parse(JSON.stringify(G.rnd(pool.length ? pool : RW[p])));
-    if (r.t === 'box') r.k = boxFor(r.s);
     used.push(r.t);
     return r;
   }
@@ -86,6 +87,8 @@
     var Q = G.S.quests = G.S.quests || {};
     if (!Q[p] || Q[p].id !== periodId(p) || !Array.isArray(Q[p].list)) Q[p] = newSet(p);
     Q[p].list = Q[p].list.filter(function (q) { return q && QK[q.k]; });
+    // Belohnungen immer nach der aktuellen Tabelle (falls sie geändert wurde)
+    Q[p].list.forEach(function (q) { var def = RW[p].filter(function (x) { return q.rw && x.t === q.rw.t; })[0]; if (def) q.rw = JSON.parse(JSON.stringify(def)); });
     return Q[p];
   }
   function prog(q) { return Math.max(0, Math.min(q.n, STAT[q.k](G.S) - q.base)); }
@@ -94,7 +97,7 @@
   function rwText(r) {
     switch (r.t) {
       case 'coins': return '💰 ' + (r.s >= 3600 ? (r.s / 3600).toLocaleString('de-DE') + ' Std.' : r.s / 60 + ' Min.') + ' Geld';
-      case 'box': return '📦 ' + (SI.BK[r.k || boxFor(r.s)] || SI.BK.holz).n;
+      case 'box': return '📦 ' + SI.BK[boxFor(r.s)].n;
       case 'boost': return '⚡ ' + r.s / 60 + ' Min. doppeltes Geld';
       case 'card': return '🃏 Upgrade-Karte';
       case 'deko': return '🎀 Deko-Kiste ' + SI.RAR[r.r].n;
@@ -102,7 +105,7 @@
     return '';
   }
   function rwPic(r) {
-    if (r.t === 'box') return A.boxURL(r.k || boxFor(r.s));
+    if (r.t === 'box') return A.boxURL(boxFor(r.s));
     if (r.t === 'card') return A.cardBackURL();
     if (r.t === 'deko') return A.boxURL('g' + r.r);
     return A.iconURL('coin');
@@ -112,7 +115,7 @@
   function give(r) {
     switch (r.t) {
       case 'coins': var a = G.giveSec(r.s); SFX('coin'); U.toast('+' + fmt(a) + ' Münzen!'); break;
-      case 'box': U.sheepReveal(G.openBox(SI.BK[r.k] ? r.k : 'holz', true), ''); break;
+      case 'box': var bk = boxFor(r.s); U.sheepReveal(G.openBox(bk, true), ''); break;
       case 'boost': G.addBoost(r.s); SFX('unlock'); U.flash('#ffe066'); U.toast('⚡ Doppeltes Geld für ' + r.s / 60 + ' Minuten!'); break;
       case 'card': var c = G.rollCard(); G.S.cards[c.k] = G.card(c.k) + 1; U.sheepReveal({ card: c, box: SI.BK.holz }, ''); break;
       case 'deko': U.dekoReveal(G.giveDeko(r.r), r.r); break;
@@ -189,7 +192,7 @@
       q.cl = 1; SFX('daily'); give(q.rw);
     } else if (a === 'qBonus') {
       if (s.bonus || !s.list.every(function (x) { return x.cl; })) return;
-      s.bonus = 1; SFX('trumpet'); BONUS[p].forEach(function (r) { give(JSON.parse(JSON.stringify(r.t === 'box' ? { t: 'box', k: boxFor(r.s) } : r))); });
+      s.bonus = 1; SFX('trumpet'); BONUS[p].forEach(function (r) { give(r); });
     } else {
       var old = s.list[i]; if (!old || old.cl || s.swap) return;
       var have = s.list.map(function (x) { return x.k; });
