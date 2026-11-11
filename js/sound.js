@@ -129,6 +129,7 @@
   /* ---------- Soundeffekte ---------- */
   var FX = {
     click: function () { knock(0, 260 + Math.random() * 80, 0.18); },
+    ui: function () { var f = 900 + Math.random() * 120; tone(f, 0.06, { type: 'sine', vol: 0.11, to: f * 1.35, a: 0.002 }); tone(f * 2, 0.03, { type: 'triangle', vol: 0.04, a: 0.001 }); }, // leichter Klick für Menüs
     tab: function () { knock(0, 200 + Math.random() * 40, 0.2); swish(0.01, 0.12, 2500, 4000, 0.05); },
     close: function () { swish(0, 0.18, 3000, 1200, 0.08); knock(0.12, 170, 0.12); },
     cant: function () { knock(0, 120, 0.25); knock(0.12, 105, 0.2); },

@@ -181,9 +181,9 @@
     if (a === 'raceReward') { U.nextModal(); giveReward(); return; }
     if (a.slice(0, 2) !== 'rc' || G.visiting) return;
     switch (a) {
-      case 'rcEdit': R.mode = 'edit'; R.draft = ok(R.mine && R.mine.racer); SFX('pick'); rerender(); break;
+      case 'rcEdit': R.mode = 'edit'; R.draft = ok(R.mine && R.mine.racer); SFX('ui'); rerender(); break;
       case 'rcCancel': R.mode = 'main'; rerender(); break;
-      case 'rcSet': R.draft[arg] = +parts[2]; SFX('pick'); rerender(); break;
+      case 'rcSet': R.draft[arg] = +parts[2]; SFX('ui'); rerender(); break;
       case 'rcSave':
         R.busy = true; rerender();
         N.club.racer(tok(), R.draft).then(function (m) { R.mine = m; R.mode = 'main'; SFX('star'); U.toast('Euer Renn-Schaf sieht super aus!'); loadBoard(); })

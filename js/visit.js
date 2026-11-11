@@ -47,32 +47,50 @@
     var me = U.me(); F.farmName = me ? me.username + 's Farm' : 'Meine Farm'; F.visitReset();
     if (V.cam) { F.cam(V.cam); V.cam = null; }
     document.body.classList.remove('visiting');
-    var b = $('#visitbar'); if (b) b.hidden = true;
+    var b = $('#visitbar'); if (b) b.hidden = true; var hb = $('#visHeart'); if (hb) hb.hidden = true;
     if (!quiet) SFX('close');
     U.refresh();
   }
+  var HEART = '<svg viewBox="-26 -24 52 50" class="hsvg" aria-hidden="true"><path d="M0 22C-30 2 -20 -24 0 -9C20 -24 30 2 0 22Z" fill="currentColor" stroke="#2a1d14" stroke-width="4" stroke-linejoin="round"/><path d="M-13 -9Q-17 -2 -12 4" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" opacity=".8"/></svg>';
   function heart() {
     if (!G.visiting || V.busy || V.info.liked) return;
-    V.busy = true;
+    V.busy = true; var hb0 = $('#visHeart'); if (hb0) hb0.classList.add('press');
     N.farm.heart(tok(), V.name).then(function (n) {
       V.info.liked = true; V.info.hearts = n;
       var S = V.home; S.stats.hearts = (S.stats.hearts || 0) + 1;
-      SFX('heart'); U.toast('❤️ Du hast ' + V.name + ' ein Herz geschenkt!');
-      var hb = $('#visHeart'); if (hb) U.sparks(hb, 14);
+      SFX('heart'); likeBurst();
     }).catch(function (e) { SFX('cant'); U.toast(N.errText(e)); if ((e.message || '').indexOf('heart_done') >= 0) V.info.liked = true; })
-      .then(function () { V.busy = false; bar(); });
+      .then(function () { V.busy = false; bar(); var hb = $('#visHeart'); if (hb && V.info.liked) { hb.classList.add('pop'); var c = hb.querySelector('.hcnt'); if (c) c.classList.add('bump'); } });
+  }
+  // Like-Animation: großes Herz in der Mitte und viele kleine Herzen fliegen hoch
+  function likeBurst() {
+    var fx = document.createElement('div'); fx.className = 'likefx';
+    var h = '<div class="lbig">' + HEART + '<span>Like!</span></div><div class="lring"></div>';
+    var cols = ['#ff4f8b', '#ff7aa8', '#e8336f', '#ffb3cf', '#ff2d6f'];
+    for (var i = 0; i < 18; i++) {
+      var a = (i / 18) * Math.PI * 2, d = 90 + Math.random() * 70;
+      h += '<i style="--x:' + Math.round(Math.cos(a) * d) + 'px;--y:' + Math.round(Math.sin(a) * d - 40) + 'px;--s:' + (0.5 + Math.random() * 0.7).toFixed(2) + ';--d:' + (Math.random() * 0.15).toFixed(2) + 's;color:' + cols[i % cols.length] + '">' + HEART + '</i>';
+    }
+    fx.innerHTML = h; document.body.appendChild(fx);
+    var hb = $('#visHeart');
+    if (hb) { var r = hb.getBoundingClientRect(); for (var k = 0; k < 10; k++) { var f = document.createElement('i'); f.className = 'hfloat'; f.innerHTML = HEART; f.style.left = (r.left + r.width * (0.2 + Math.random() * 0.6)) + 'px'; f.style.top = (r.top + 6) + 'px'; f.style.setProperty('--dx', Math.round(Math.random() * 80 - 40) + 'px'); f.style.animationDelay = (k * 0.07) + 's'; document.body.appendChild(f); setTimeout(function (el) { el.remove(); }.bind(null, f), 1900); } }
+    U.flash('#ffb3cf'); setTimeout(function () { fx.remove(); }, 1600);
   }
   function bar() {
     var b = $('#visitbar');
     if (!b) { b = document.createElement('div'); b.id = 'visitbar'; b.className = 'visitbar'; document.body.appendChild(b); }
     b.hidden = false;
     var S = V.data, d = V.info, sheep = 0; Object.keys(S.sheep || {}).forEach(function (k) { sheep += S.sheep[k]; });
-    var deko = (S.dekoPlaced || []).length;
-    b.innerHTML = '<div class="vtop"><span class="vic">🏡</span><div class="vt"><small>Du besuchst</small><b>' + esc(V.name) + 's Farm</b></div>' +
-      '<button class="btn ghost vhome" data-act="visHome">🏠 Nach Hause</button></div>' +
-      '<div class="vstats num"><span>🐑 <b>' + sheep + '</b> Schafe</span><span>🎀 <b>' + deko + '</b> Deko</span><span>🔁 <b>' + (S.rebirths || 0) + '</b> Rebirth' + (S.rebirths === 1 ? '' : 's') + '</span>' + (d.income ? '<span>💰 <b>' + fmt(d.income) + '</b>/Sek.</span>' : '') + '</div>' +
-      '<button class="vheart' + (d.liked ? ' on' : '') + '" id="visHeart" data-act="visHeart"' + (d.liked ? ' disabled' : '') + '><span>' + (d.liked ? '❤️' : '🤍') + '</span>' +
-      (d.liked ? 'Herz geschenkt!' : 'Herz schenken') + '<b class="num">' + (d.hearts || 0) + '</b></button>';
+    var deko = (S.dekoPlaced || []).length, cl = S.club && S.club.name ? S.club : null;
+    b.innerHTML = '<div class="vtop"><span class="vav"><img src="' + avatar(V.name) + '" alt=""></span><div class="vt"><small>Zu Besuch bei</small><b>' + esc(V.name) + '</b>' +
+      (cl ? '<span class="vclub">' + (SI.club ? SI.club.crest(cl.crest, 16) : '') + esc(cl.name) + '</span>' : '') + '</div>' +
+      '<button class="btn ghost vhome" data-act="visHome">🏠 Heim</button></div>' +
+      '<div class="vstats num"><span><i>🐑</i><b>' + sheep + '</b><small>Schafe</small></span><span><i>🎀</i><b>' + deko + '</b><small>Deko</small></span><span><i>🔁</i><b>' + (S.rebirths || 0) + '</b><small>Rebirths</small></span>' +
+      '<span><i>💰</i><b>' + (d.income ? fmt(d.income) : '–') + '</b><small>pro Sek.</small></span></div>';
+    var hb = $('#visHeart');
+    if (!hb) { hb = document.createElement('button'); hb.id = 'visHeart'; hb.dataset.act = 'visHeart'; document.body.appendChild(hb); }
+    hb.hidden = false; hb.className = 'vheart' + (d.liked ? ' on' : ''); hb.disabled = !!d.liked;
+    hb.innerHTML = '<span class="hic">' + HEART + '</span><span class="hlb">' + (d.liked ? 'Geliked!' : 'Like') + '</span><b class="hcnt num">' + (d.hearts || 0) + '</b>';
   }
 
   /* ---------- Menü ---------- */
@@ -82,9 +100,9 @@
   }
   U.views.besuch = function () {
     var me = U.me(), h = '';
-    h += '<div class="card vme"><span class="vbig">❤️</span><div><h3>Deine Farm</h3><p class="hint">' + (V.myHearts == null ? 'Lädt …' : 'Andere Spieler haben dir <b>' + V.myHearts + (V.myHearts === 1 ? ' Herz' : ' Herzen') + '</b> geschenkt.') + '</p></div></div>';
+    h += '<div class="card vme"><span class="vbig">' + HEART + '<b class="num">' + (V.myHearts == null ? '…' : V.myHearts) + '</b></span><div><h3>Deine Likes</h3><p class="hint">' + (V.myHearts == null ? 'Lädt …' : 'So viele Likes hast du von anderen Spielern für deine Farm bekommen.') + '</p></div></div>';
     h += '<div class="card"><h3>Farm besuchen</h3><div class="durow"><input id="visName" data-vis="name" placeholder="Name vom Spieler" autocomplete="off" autocapitalize="off" maxlength="16" value="' + esc(V.nameIn) + '">' +
-      '<button class="btn" data-act="visGo">Besuchen</button></div><p class="hint">Du kannst dir die Farm ansehen und einmal am Tag ein Herz schenken. Ändern kannst du dort nichts.</p></div>';
+      '<button class="btn" data-act="visGo">Besuchen</button></div><p class="hint">Du kannst dir die Farm ansehen und jedem Spieler einmal am Tag ein Like ❤️ geben. Ändern kannst du dort nichts.</p></div>';
     var names = [], seenN = {};
     function add(n, why) { var k = String(n || '').toLowerCase(); if (!k || seenN[k] || (me && k === me.username.toLowerCase())) return; seenN[k] = 1; names.push([n, why]); }
     if (!N.online) add(N.BOT, 'Test-Farm');
