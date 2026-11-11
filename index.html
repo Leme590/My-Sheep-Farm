@@ -846,6 +846,23 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 .tw em{font-style:normal;font-size:10px;font-weight:800;opacity:.75;text-align:center}
 .tw .tnew{position:absolute;top:-10px;right:-6px;background:#ff3b30;color:#fff;font-family:var(--display);font-size:11px;padding:1px 6px;border-radius:8px;border:2px solid var(--out)}
 @keyframes twin{to{opacity:1;transform:none}}
+
+/* Doppeltes Geld unter dem Geld */
+.boostpill{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;border:3px solid var(--out);box-shadow:0 3px 0 var(--out);border-radius:14px;padding:3px 10px 3px 6px;background:linear-gradient(#ffd23f,#ff8a1a);color:#fff;font-family:var(--display);font-size:15px;text-shadow:var(--ts-s);animation:bpglow 1.6s ease-in-out infinite}
+.boostpill[hidden]{display:none}
+.boostpill .bpi{font-size:18px;animation:mbang 1.2s ease-in-out infinite}
+.boostpill .bpt{background:rgba(0,0,0,.25);border-radius:8px;padding:0 6px;font-family:var(--body,inherit);font-weight:900;font-size:13px}
+@keyframes bpglow{0%,100%{filter:none}50%{filter:brightness(1.15) drop-shadow(0 0 6px #ffd23f)}}
+/* Erfolg-Fenster */
+.modal.achm{text-align:center;overflow:hidden}
+.achm .achcup{font-size:84px;line-height:1;display:inline-block;animation:achpop .7s cubic-bezier(.2,1.6,.4,1),achwob 2s ease-in-out .7s infinite;filter:drop-shadow(0 0 18px #ffd23f)}
+.achm .achtag{display:inline-block;background:linear-gradient(#ffe066,#f3b31a);border:3px solid var(--out);border-radius:12px;padding:2px 12px;font-family:var(--display);color:#fff;text-shadow:var(--ts-s);font-size:15px;margin:6px 0 2px}
+.achm h2{margin:4px 0}
+.achm .achrw{display:inline-flex;align-items:center;gap:6px;background:#fff6d6;border:3px solid var(--out);border-radius:14px;padding:4px 14px;font-weight:900;font-size:18px;margin:6px 0 10px}
+.achm .achrw img{width:26px;height:26px}
+.achm .achcnt{font-size:12px;opacity:.7;font-weight:800}
+@keyframes achpop{from{transform:scale(0) rotate(-30deg)}to{transform:none}}
+@keyframes achwob{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg) scale(1.05)}}
 </style>
 
 <canvas id="farm" aria-label="Deine Schaf-Farm"></canvas>
@@ -854,8 +871,9 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
   <div class="hleft">
     <div class="money">
       <img id="coinImg" alt="">
-      <div style="min-width:0"><b class="num" id="coinNum">0</b><small class="num" id="incNum">+0 pro Sek.</small><small class="num boostnum" id="boostNum" hidden></small></div>
+      <div style="min-width:0"><b class="num" id="coinNum">0</b><small class="num" id="incNum">+0 pro Sek.</small></div>
     </div>
+    <div class="boostpill" id="boostNum" hidden></div>
     <div class="lchips">
       <button class="hchip questchip" data-act="sheet:quests" aria-label="Aufgaben">📜 Aufgaben<i class="dot" id="dotQuest" hidden></i></button>
       <button class="hchip visitchip" data-act="sheet:besuch" aria-label="Farmen besuchen">🏡 Besuchen</button>

@@ -199,6 +199,15 @@
     });
   }
 
+  // Kai: Erfolge in einem eigenen Fenster zeigen, das man schließen muss
+  function achModal(x) {
+    var got = SI.ACH.filter(function (a) { return G.S.ach[a.k]; }).length;
+    modal('<div class="modal achm"><div class="achcup">🏆</div><div class="achtag">Erfolg geschafft!</div><h2>' + esc(x.a.n) + '</h2><p>' + esc(x.a.d) + '</p>' +
+      '<div class="achrw num"><img src="' + A.iconURL('coin') + '" alt="">+' + fmt(x.r) + '</div><div class="achcnt num">' + got + ' von ' + SI.ACH.length + ' Erfolgen</div>' +
+      '<div class="btns"><button class="btn coin" data-act="close">Super!</button></div></div>',
+    function (ov) { SFX('ach'); var md = ov.querySelector('.modal'); flash('#ffe066'); confetti(md, 50, '#ffc21a'); sparks(md.querySelector('.achcup'), 24); });
+  }
+
   /* ---------- Login ---------- */
   var lmode = 'login';
   function showLogin(msg) {
@@ -286,7 +295,7 @@
     G.tick(dt, !document.hidden);
     if (SI.sfx && !document.hidden) SI.sfx.ambient(G.cycle().night, G.sheepCount());
     if (G.merch && now > G.merch.end) { G.merch = null; renderMerchant(); toast('Der Händler ist weitergezogen.'); }
-    if ((achT += dt) > 3) { achT = 0; G.checkAch().forEach(function (x) { SFX('ach'); toast('Erfolg: ' + x.a.n + ' · +' + fmt(x.r) + ' Münzen'); }); }
+    if ((achT += dt) > 3) { achT = 0; G.checkAch().forEach(achModal); }
     if ((locT += dt) > 5) { locT = 0; saveLocal(); }
     if (now - lastCloud > 20000) { saveCloud(); checkInbox(); }
     if ((sheetT += dt) >= 1) { sheetT = 0; liveSheet(); merchTime(); }
@@ -295,7 +304,12 @@
   function hud() {
     $('#coinNum').textContent = fmt(G.S.coins);
     var inc = $('#incNum'), bl = G.boostLeft(), bn = $('#boostNum'); inc.textContent = '+' + fmt(G.income()) + ' pro Sek.' + (G.wolfActive ? ' (Wolf!)' : '');
-    bn.hidden = !(bl > 0); if (bl > 0) bn.textContent = '⚡×2 · ' + Math.floor(bl / 60) + ':' + ('0' + Math.floor(bl % 60)).slice(-2);
+    bn.hidden = !(bl > 0);
+    if (bl > 0) { // Kai: oben unter dem Geld "2x Geld" und die Zeit (Boosts addieren sich)
+      var bh = Math.floor(bl / 3600), bm = Math.floor(bl % 3600 / 60), bs = Math.floor(bl % 60), two = function (x) { return ('0' + x).slice(-2); };
+      var bt = (bh ? bh + ':' + two(bm) : bm) + ':' + two(bs);
+      if (bn.dataset.t !== bt) { bn.dataset.t = bt; bn.innerHTML = '<span class="bpi">⚡</span>2x Geld<span class="bpt num">' + bt + '</span>'; }
+    }
     inc.classList.toggle('bad', G.wolfActive);
     var c = G.cycle(), m = Math.floor(c.left / 60), s = Math.floor(c.left % 60);
     var ck = $('#clock'), want = c.night ? 'n' : 'd';
