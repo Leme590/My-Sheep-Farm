@@ -76,22 +76,38 @@
   function reveal(o) {
     var rc = o.rc, again = o.again || '', r = o.r || 'c', rare = 'elms'.indexOf(r) >= 0;
     // Die Seltenheit sieht man beim Öffnen nur daran, wie lange und wie stark die Kiste wackelt (Kai)
-    var wait = o.instant ? 10 : ({ c: 1000, r: 1300, e: 1800, l: 2400, m: 3000, s: 3000 }[r] || 1000);
+    // Karten wackeln wie eine zufällige Seltenheit, damit man sie vorher nicht erkennt (Kai)
+    var shk = o.shake || r;
+    var wait = o.instant ? 10 : ({ c: 1000, r: 1300, e: 1800, l: 2400, m: 3000, s: 3000 }[shk] || 1000);
     modal('<div class="modal reveal opening" style="--wait:' + wait + 'ms">' +
-      '<div class="stage"><div class="rays" hidden></div><img class="shake shk-' + r + '" src="' + o.box + '" alt=""></div>' +
+      '<div class="stage"><div class="rays" hidden></div><img class="shake shk-' + shk + '" src="' + o.box + '" alt=""></div>' +
+      (o.card ? '<div class="banner cardbanner" hidden>UPGRADE-KARTE!</div>' : '') +
       (rare ? '<div class="banner" hidden>' + BANNER[r] + '</div>' : '') +
       '<div id="rvText" style="visibility:hidden;display:flex;flex-direction:column;gap:5px">' + o.body + '</div>' +
       (o.isNew ? '<span class="newtag" hidden>NEU!</span><div class="newribbon" hidden>' + (o.newText || 'Neu entdeckt!') + '</div>' : '') +
       '<div class="btns" id="rvBtns" style="visibility:hidden"><button class="btn" data-act="close">Super!</button>' + again + '</div></div>',
     function (ov) {
-      if (!o.instant) SFX('shake', r);
+      if (!o.instant) SFX('shake', shk);
       setTimeout(function () {
         var st = ov.querySelector('.stage'); if (!st) return;
         var md = ov.querySelector('.modal'); md.classList.remove('opening'); md.classList.add('rar-' + r); md.style.setProperty('--rc', rc);
         if (o.done) o.done();
-        var im = st.querySelector('img'); im.className = 'pic'; im.src = o.pic;
+        var im = st.querySelector('img');
         st.querySelectorAll('.rays').forEach(function (x) { x.hidden = false; });
-        ov.querySelector('#rvText').style.visibility = 'visible'; ov.querySelector('#rvBtns').style.visibility = 'visible';
+        if (o.card) {
+          // Karten: fliegt verdeckt heraus, dreht sich um, Glanz läuft drüber
+          md.classList.add('cardrev'); im.className = 'pic cardfly'; im.src = A.cardBackURL();
+          var cb = ov.querySelector('.cardbanner'); if (cb) cb.hidden = false;
+          var gl = document.createElement('div'); gl.className = 'cardglow'; st.insertBefore(gl, st.firstChild);
+          setTimeout(function () {
+            if (!im.isConnected) return;
+            im.src = o.pic; im.className = 'pic cardland';
+            var sh = document.createElement('i'); sh.className = 'cardshine'; st.appendChild(sh);
+            flash('#ffe066'); sparks(st, 50); confetti(md, 50, '#ffc21a'); SFX('star');
+            ov.querySelector('#rvText').style.visibility = 'visible'; ov.querySelector('#rvBtns').style.visibility = 'visible';
+          }, 700);
+        } else { im.className = 'pic'; im.src = o.pic; }
+        if (!o.card) { ov.querySelector('#rvText').style.visibility = 'visible'; ov.querySelector('#rvBtns').style.visibility = 'visible'; }
         var nt = ov.querySelector('.newtag'); if (nt) nt.hidden = false;
         var nr = ov.querySelector('.newribbon');
         if (nr) {
@@ -121,10 +137,18 @@
       }, wait);
     });
   }
+  function cardTotal(c) {
+    if (!c.per) return G.card(c.k) ? 'aktiv' : 'noch nicht';
+    var b = G.cardBonus(c.k), mx = c.max ? c.per * c.max : 0;
+    var txt = c.k === 'technik' ? '−' + b + ' % Kosten' : c.k === 'hirte' ? '+' + b + ' % Glück und Tempo' : '+' + b + ' % ' + (c.k === 'gold' ? 'Geld' : 'Glück');
+    return txt + (mx ? ' (max ' + mx + ' %)' : ' (ohne Grenze)');
+  }
   function sheepReveal(res, again, label) {
     if (res.card) {
-      reveal({ rc: '#e8a300', box: A.boxURL(res.box.k), pic: A.cardURL(), again: again, card: 1,
-        body: '<div class="rlabel">Upgrade-Karte</div><h2>' + esc(res.card.n) + '</h2><p>' + esc(res.card.d) + ' · jetzt Stufe ' + G.card(res.card.k) + '</p>' });
+      var c = res.card, n = G.card(c.k), tot = c.per ? '<p class="num"><b>' + n + (n === 1 ? ' Karte' : ' Karten') + '</b> · zusammen ' + cardTotal(c) + '</p>' : '';
+      reveal({ rc: '#e8a300', box: A.boxURL(res.box.k), pic: A.cardURL(c.k), again: again, card: 1, shake: G.rollRarity(res.box.odds, 0),
+        body: '<h2>' + esc(c.n) + '</h2><p>' + esc(c.d) + '</p>' + tot +
+          (G.cardMaxed(c.k) && c.max > 1 ? '<p class="hint">Maximum erreicht! Diese Karte kommt jetzt nicht mehr.</p>' : '') });
       return;
     }
     var t = res.t, where = res.placed ? (res.built ? (G.pensOf(t.id).length > 1 ? ' · Gehege voll, ein weiteres Gehege wurde gebaut!' : ' · neues Gehege gebaut!') : '') : ' · wartet in der Scheune (kein Platz)';
@@ -346,7 +370,7 @@
       var deal = G.merch && G.merch.k === b.k ? '<div class="deal">Händler-Angebot: halber Preis!</div>' : '';
       h += '<div class="boxcard bx-' + b.k + '"><img src="' + A.boxURL(b.k) + '" alt=""><div style="min-width:0"><h3>' + esc(b.n) + '</h3>' + deal + '<div class="odds">' + chips + '</div>' + costBtn(G.boxPrice(b.k), 'open:' + b.k, 'Öffnen') + '</div></div>';
     });
-    h += '<p class="hint">Die Preise bleiben immer gleich. Bessere Kisten schaltest du mit Rebirths frei. Glücksklee-Karten machen seltene Schafe wahrscheinlicher' + (G.card('glueck') ? ' (gerade +' + G.card('glueck') * 5 + ' %)' : '') + '.</p>';
+    h += '<p class="hint">Die Preise bleiben immer gleich. Bessere Kisten schaltest du mit Rebirths frei. Glücksklee-Karten machen seltene Schafe wahrscheinlicher' + (G.card('glueck') ? ' (gerade +' + G.cardBonus('glueck') + ' % Glück)' : '') + '.</p>';
     return { title: 'Mystery-Boxen', html: h };
   };
   VIEWS.deko = function () {
@@ -395,7 +419,8 @@
         return '<button class="tile" data-act="pick:' + id + '"' + (left <= 0 || picks.length >= 2 ? ' disabled' : '') + '><img src="' + A.sheepURL(T[id]) + '" alt=""><b>' + esc(T[id].n) + '</b><small class="num">' + G.S.sheep[id] + '×</small></button>';
       }).join('') + '</div>';
     }
-    h += '<p class="hint">Manche Paare bekommen immer ein geheimes Schaf, welche, musst du selbst herausfinden. Sonst gibt es ein Baby in der Seltenheit der Eltern, manchmal sogar eine Stufe besser.</p>';
+    h += '<p class="hint">Manche Paare bekommen immer ein geheimes Schaf, welche, musst du selbst herausfinden. Sonst gibt es ein Baby in der Seltenheit der Eltern, manchmal sogar eine Stufe besser.' +
+      (G.card('hirte') ? ' Dein Hirtenstab gibt dir +' + G.cardBonus('hirte') + ' % Glück und macht die Zucht ' + G.cardBonus('hirte') + ' % schneller.' : '') + '</p>';
     return { title: 'Zuchtstation', html: h };
   };
   VIEWS.buch = function () {
@@ -434,10 +459,11 @@
     h += '<div class="card"><h3>Rebirth</h3><p class="hint">Fang neu an und werde stärker: Du verdienst danach für immer +25 % mehr pro Rebirth, deine Farm bekommt 2 neue Plätze und du schaltest bessere Kisten frei. Jeder Rebirth ist viel teurer als der davor. Es gibt insgesamt ' + G.MAXRB + ' Rebirths. Deko, Sammelbuch und Erfolge bleiben.</p>' +
       '<div class="stats num"><span>Rebirths</span><b>' + G.S.rebirths + ' / ' + G.MAXRB + '</b><span>Geld-Bonus jetzt</span><b>×' + G.rbMult().toLocaleString('de-DE') + '</b><span>Farm-Plätze</span><b>' + G.plotCount() + (G.rebirthMax() ? '' : ' → ' + (G.plotCount() + G.RB_PLOTS)) + '</b></div>' +
       (G.rebirthMax() ? '<p class="hint" style="text-align:center"><b>Alle ' + G.MAXRB + ' Rebirths geschafft!</b> Mehr gibt es nicht. Jetzt kannst du dein Imperium voll ausbauen.</p>' : costBtn(rc, 'rebirthAsk', 'Rebirth', 'pink')) + '</div>';
-    var owned = SI.CARDS.filter(function (c) { return G.card(c.k); });
-    h += '<div class="card"><h3>Upgrade-Karten</h3>' + (owned.length ? '<div class="list">' + owned.map(function (c) {
-      return '<div class="li"><img src="' + A.cardURL() + '" alt=""><div class="t">' + esc(c.n) + '<small>' + esc(c.d) + '</small></div><b class="num">Stufe ' + G.card(c.k) + '</b></div>';
-    }).join('') + '</div>' : '<p class="hint">Noch keine. Karten kommen manchmal aus Mystery-Boxen.</p>') + '</div>';
+    h += '<div class="card"><h3>Upgrade-Karten</h3><p class="hint">Karten kommen manchmal aus Mystery-Boxen. Bei einem Rebirth fangen sie wieder bei 0 an.</p><div class="list cardlist">' + SI.CARDS.map(function (c) {
+      var n = G.card(c.k), mx = G.cardMaxed(c.k);
+      return '<div class="li cardli' + (n ? '' : ' none') + (mx ? ' maxed' : '') + '"><img src="' + A.cardURL(c.k) + '" alt=""><div class="t"><b>' + esc(c.n) + '</b><small>' + esc(c.d) + (c.max > 1 ? ' · höchstens ' + c.max + ' Karten' : !c.max ? ' · ohne Grenze' : '') + '</small></div>' +
+        '<div class="cnum num"><b>' + (c.per ? n + '×' : n ? '✔' : '–') + '</b><small>' + (mx && c.max > 1 ? 'MAX ' : '') + esc(c.per ? cardTotal(c).replace(/ \(.*\)$/, '') : (n ? 'aktiv' : 'fehlt noch')) + '</small></div></div>';
+    }).join('') + '</div></div>';
     var got = SI.ACH.filter(function (a) { return G.S.ach[a.k]; }).length;
     h += '<div class="card"><h3>Erfolge <span class="hint num">' + got + ' / ' + SI.ACH.length + '</span></h3><div>' + SI.ACH.map(function (a) {
       return '<div class="ach' + (G.S.ach[a.k] ? ' got' : '') + '"><span class="ic">' + ICON_STAR + '</span><div class="t">' + esc(a.n) + '<small>' + esc(a.d) + '</small></div></div>';

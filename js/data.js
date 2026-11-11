@@ -94,12 +94,12 @@ window.SI = window.SI || {};
   SI.NACHO = { k: 'nacho', n: 'Nacho-Box', cost: 75e6, odds: { e: 60, l: 35, m: 5 }, card: 8, col: '#ffb52e', ev: 'taco' };
   SI.BK.nacho = SI.NACHO;
 
+  // Upgrade-Karten (Kai): per = Bonus pro Karte in %, max = höchstens so viele Karten (ohne max: unendlich)
   SI.CARDS = [
-    { k: 'schere', n: 'Goldene Schere', d: '+10 % Einkommen', w: 30 },
-    { k: 'klee', n: 'Kleefutter', d: '+5 % Einkommen', w: 30 },
-    { k: 'glueck', n: 'Glücksklee', d: '+5 % Glück bei Boxen', w: 18 },
-    { k: 'zeit', n: 'Zeitkristall', d: '+5 % Einkommen', w: 10 },
-    { k: 'zucht', n: 'Zuchtbuch', d: 'Zucht 15 % schneller', w: 8 },
+    { k: 'glueck', n: 'Glücksklee', d: '+5 % Glück beim Öffnen von Kisten', what: 'Glück bei Kisten', per: 5, max: 20, w: 30 },
+    { k: 'gold', n: 'Goldkiste', d: '+5 % mehr Geld-Einnahmen', what: 'mehr Geld', per: 5, w: 34 },
+    { k: 'hirte', n: 'Hirtenstab', d: '+5 % Glück und +5 % schneller beim Züchten', what: 'Zucht-Glück und Zucht-Tempo', per: 5, max: 10, w: 18 },
+    { k: 'technik', n: 'Technik', d: 'Gehege ausbauen kostet 5 % weniger', what: 'billigere Gehege-Ausbauten', per: 5, max: 10, w: 16 },
     { k: 'hund', n: 'Hütehund', d: 'Verjagt Wölfe von allein', w: 4, max: 1 }
   ];
   SI.CK = {};

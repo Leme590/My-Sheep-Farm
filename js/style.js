@@ -1153,14 +1153,96 @@
     }, { ol: 1.3, sc: 3 });
     iurl[name] = s.c.toDataURL(); return iurl[name];
   };
-  var curl = null;
-  A.cardURL = function () {
-    if (curl) return curl;
-    curl = sprite('card', [-18, -48, 18, 2], function (g) {
-      g.beginPath(); rrect(g, -16, -46, 32, 46, 5); sfill(g, '#ffcc22', 1.8);
-      g.beginPath(); rrect(g, -12, -42, 24, 38, 3); g.strokeStyle = '#fff6c0'; g.lineWidth = 1.6; g.stroke();
-      star(g, 0, -23, 9, 4, 5); sfill(g, '#ffffff', 1.3);
-    }, { ol: 1.3, sc: 3 }).c.toDataURL();
-    return curl;
+  /* ---------- Upgrade-Karten: jede hat ihr eigenes Design ---------- */
+  var CARD_TH = {
+    glueck: { f1: '#7fe06a', f2: '#2e9a22', in1: '#eaffd9', in2: '#9fe07d' },
+    gold: { f1: '#ffe066', f2: '#d98e00', in1: '#a8352a', in2: '#5c1410' },
+    hirte: { f1: '#d9a066', f2: '#7a4a22', in1: '#d8f1ff', in2: '#7fc4f0' },
+    technik: { f1: '#b9c6d8', f2: '#55657e', in1: '#3a4f78', in2: '#17223d' },
+    hund: { f1: '#ff9a5c', f2: '#c4501c', in1: '#fff3c8', in2: '#ffcf6a' },
+    back: { f1: '#c58bff', f2: '#6a2fb0', in1: '#8a4fe0', in2: '#3b1470' }
   };
+  function cardFrame(g, th) {
+    g.beginPath(); rrect(g, -16, -46, 32, 46, 5); fillOut(g, vgrad(g, -46, 0, th.f1, th.f2), 1.8);
+    var rg = g.createRadialGradient(0, -26, 2, 0, -24, 24); rg.addColorStop(0, th.in1); rg.addColorStop(1, th.in2);
+    g.beginPath(); rrect(g, -12.5, -42.5, 25, 34, 3.5); fillOut(g, rg, 1.2);
+    // kleine Ecken-Steine und Glanz oben
+    [[-13.5, -43.5], [13.5, -43.5], [-13.5, -3], [13.5, -3]].forEach(function (p) { g.beginPath(); circ(g, p[0], p[1], 1.7); fillOut(g, '#ffffff', 0.8); });
+    g.globalAlpha = 0.35; g.fillStyle = '#ffffff'; g.beginPath(); rrect(g, -14, -45, 28, 4, 2); g.fill(); g.globalAlpha = 1;
+    g.beginPath(); rrect(g, -9, -7.2, 18, 4.6, 2.3); fillOut(g, th.f2, 1);
+  }
+  function cardIcon(g, k) {
+    var i;
+    if (k === 'glueck') {
+      line(g, [0, -24, 2, -16, 1, -12], OUT, 3.2); line(g, [0, -24, 2, -16, 1, -12], '#3d9a2a', 1.6);
+      for (i = 0; i < 4; i++) {
+        g.save(); g.translate(0, -26); g.rotate(i * TAU / 4 + 0.785);
+        g.beginPath(); g.moveTo(0, 0); g.bezierCurveTo(-7, -3, -6, -11, 0, -8.5); g.bezierCurveTo(6, -11, 7, -3, 0, 0); fillOut(g, i % 2 ? '#56c23c' : '#3fae2c', 1.2);
+        g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(0, -1); g.lineTo(0, -7); g.stroke();
+        g.restore();
+      }
+      g.beginPath(); circ(g, 0, -26, 1.6); fillOut(g, '#2e8a1f', 0.8);
+      glint(g, -8, -36, 2.2); glint(g, 8, -14, 1.8); glint(g, 9, -37, 1.4);
+    } else if (k === 'gold') {
+      // Strahlen
+      g.save(); g.globalAlpha = 0.35; g.fillStyle = '#ffd23f';
+      for (i = 0; i < 10; i++) { g.beginPath(); g.moveTo(0, -27); g.arc(0, -27, 20, i * TAU / 10, i * TAU / 10 + 0.3); g.closePath(); g.fill(); }
+      g.restore();
+      g.beginPath(); rrect(g, -9, -27, 18, 12, 2); fillOut(g, vgrad(g, -27, -15, '#ffd23f', '#e09a00'), 1.3);
+      g.beginPath(); g.moveTo(-9.5, -27); g.quadraticCurveTo(0, -36, 9.5, -27); g.closePath(); fillOut(g, vgrad(g, -33, -27, '#ffe680', '#f2b01e'), 1.3);
+      g.fillStyle = '#b06a00'; g.fillRect(-9, -27.6, 18, 1.6); g.fillRect(-1.5, -33, 3, 18);
+      g.beginPath(); rrect(g, -2.4, -25, 4.8, 4, 1); fillOut(g, '#fff3b0', 0.9);
+      [[-7, -37, 2.6], [6, -39, 3], [0, -41, 2.3]].forEach(function (c) { g.beginPath(); circ(g, c[0], c[1], c[2]); fillOut(g, '#ffd23f', 1); g.strokeStyle = '#c98a12'; g.lineWidth = 0.6; g.beginPath(); circ(g, c[0], c[1], c[2] * 0.55); g.stroke(); });
+      glint(g, 9, -21, 2); glint(g, -9, -32, 1.6);
+    } else if (k === 'hirte') {
+      g.beginPath(); circ(g, 0, -14, 7); g.fillStyle = 'rgba(120,200,90,.6)'; g.fill(); // Hügel
+      line(g, [3, -11, 3, -31], OUT, 4.4); line(g, [3, -11, 3, -31], '#b07a45', 2.6);
+      g.lineCap = 'round'; g.strokeStyle = OUT; g.lineWidth = 4.4; g.beginPath(); g.arc(-2, -31, 5, 0, Math.PI, true); g.stroke();
+      g.strokeStyle = '#c98a55'; g.lineWidth = 2.6; g.beginPath(); g.arc(-2, -31, 5, 0, Math.PI, true); g.stroke();
+      g.fillStyle = '#7a4a22'; g.fillRect(1.6, -24, 2.8, 2); // Griff-Band
+      // Herz und kleine Sanduhr
+      g.save(); g.translate(-6, -19); g.beginPath(); g.moveTo(0, 3); g.bezierCurveTo(-5, -1, -3, -6, 0, -3); g.bezierCurveTo(3, -6, 5, -1, 0, 3); fillOut(g, '#ff5f9a', 1); g.restore();
+      g.save(); g.translate(8, -37); g.beginPath(); g.moveTo(-2.5, -3); g.lineTo(2.5, -3); g.lineTo(0, 0); g.lineTo(2.5, 3); g.lineTo(-2.5, 3); g.lineTo(0, 0); g.closePath(); fillOut(g, '#fff3c8', 0.8); g.restore();
+      glint(g, -8, -38, 1.8);
+    } else if (k === 'technik') {
+      g.strokeStyle = 'rgba(120,170,255,.25)'; g.lineWidth = 0.5;
+      for (i = -10; i <= 10; i += 4) { g.beginPath(); g.moveTo(i, -42); g.lineTo(i, -9); g.stroke(); }
+      for (i = -40; i <= -10; i += 4) { g.beginPath(); g.moveTo(-12, i); g.lineTo(12, i); g.stroke(); }
+      // Zahnrad
+      g.save(); g.translate(-1, -27);
+      g.beginPath(); for (i = 0; i < 16; i++) { var a = i / 16 * TAU, r = i % 2 ? 7 : 9.2; g.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g.closePath();
+      fillOut(g, vgrad(g, -9, 9, '#e6edf5', '#8a9bb3'), 1.2);
+      g.beginPath(); circ(g, 0, 0, 3.2); fillOut(g, '#3a4f78', 1); g.restore();
+      // Schraubenschlüssel
+      g.save(); g.translate(5, -19); g.rotate(-0.8);
+      g.beginPath(); rrect(g, -1.6, -2, 3.2, 13, 1.4); fillOut(g, '#ffc21a', 1);
+      g.beginPath(); g.arc(0, -3.5, 3.6, 0.3, Math.PI - 0.3, true); g.lineTo(-1.2, -5); g.lineTo(1.2, -5); g.closePath(); fillOut(g, '#ffc21a', 1);
+      g.restore();
+      g.fillStyle = '#9fe1ff'; [[-8, -38], [8, -13], [9, -39]].forEach(function (p) { g.beginPath(); circ(g, p[0], p[1], 0.9); g.fill(); });
+    } else if (k === 'hund') {
+      g.beginPath(); ell(g, -7, -28, 3.4, 6.5); fillOut(g, '#6b3f1d', 1.1); g.beginPath(); ell(g, 7, -28, 3.4, 6.5); fillOut(g, '#6b3f1d', 1.1);
+      g.beginPath(); circ(g, 0, -26, 8); fillOut(g, '#c98a55', 1.3);
+      g.beginPath(); ell(g, 0, -21.5, 5, 3.8); fillOut(g, '#fff3e0', 1);
+      g.fillStyle = OUT; g.beginPath(); ell(g, 0, -23.5, 1.8, 1.3); g.fill();
+      g.beginPath(); circ(g, -3, -28, 1.3); g.fill(); g.beginPath(); circ(g, 3, -28, 1.3); g.fill();
+      g.fillStyle = '#fff'; g.beginPath(); circ(g, -2.6, -28.4, 0.45); g.fill(); g.beginPath(); circ(g, 3.4, -28.4, 0.45); g.fill();
+      g.beginPath(); ell(g, 0, -19, 1.6, 1.4); g.fillStyle = '#ff6f8a'; g.fill();
+      g.beginPath(); rrect(g, -6, -15.5, 12, 2.6, 1.3); fillOut(g, '#e0342a', 0.9); g.beginPath(); circ(g, 0, -13.6, 1.5); fillOut(g, '#ffd23f', 0.8);
+    } else {
+      // Rückseite: Fragezeichen-Stern
+      g.save(); g.globalAlpha = 0.25; g.fillStyle = '#ffffff';
+      for (i = 0; i < 12; i++) { g.beginPath(); g.moveTo(0, -25.5); g.arc(0, -25.5, 22, i * TAU / 12, i * TAU / 12 + 0.22); g.closePath(); g.fill(); }
+      g.restore();
+      star(g, 0, -25.5, 11, 5, 5); fillOut(g, vgrad(g, -37, -14, '#ffe066', '#ffb400'), 1.3);
+      g.fillStyle = OUT; g.font = '900 10px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('?', 0, -25);
+    }
+  }
+  var curl = {};
+  A.cardURL = function (k) {
+    k = CARD_TH[k] ? k : 'glueck';
+    if (curl[k]) return curl[k];
+    curl[k] = sprite('card-' + k, [-18, -48, 18, 2], function (g) { cardFrame(g, CARD_TH[k]); cardIcon(g, k); }, { ol: 1.3, sc: 4 }).c.toDataURL();
+    return curl[k];
+  };
+  A.cardBackURL = function () { return A.cardURL('back'); };
 })(window.SI);

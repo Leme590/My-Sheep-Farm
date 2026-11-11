@@ -30,6 +30,16 @@
     s.sheep = clean;
     s.pens = (s.pens || []).map(function (p) { return p && T[p.t] ? { t: p.t, lvl: Math.max(1, Math.min(G.MAXLVL, p.lvl | 0)), n: p.n == null ? -1 : Math.max(0, p.n | 0) } : null; });
     s.dekoPlaced = (s.dekoPlaced || []).filter(function (p) { return SI.DK[p.id]; });
+    // alte Karten (bis 11.11.2026) in die neuen umwandeln
+    var oc = s.cards || {}, nc = {};
+    var add = function (k, n) { if (n > 0) nc[k] = (nc[k] || 0) + n; };
+    Object.keys(oc).forEach(function (k) {
+      var n = oc[k] | 0;
+      if (k === 'schere') add('gold', 2 * n); else if (k === 'klee' || k === 'zeit') add('gold', n);
+      else if (k === 'zucht') add('hirte', n); else if (SI.CK[k]) add(k, n);
+    });
+    Object.keys(nc).forEach(function (k) { if (SI.CK[k].max) nc[k] = Math.min(SI.CK[k].max, nc[k]); });
+    s.cards = nc;
     G.S = s;
     // alte Spielstände (ohne Schaf-Anzahl pro Gehege): Gehege so voll wie möglich machen
     var old = s.pens.filter(function (p) { return p && p.n < 0; });
@@ -59,6 +69,9 @@
   function rnd(a) { return a[Math.floor(Math.random() * a.length)]; }
   G.rnd = rnd;
   G.card = function (k) { return G.S.cards[k] || 0; };
+  // Gesamter Bonus einer Karten-Sorte in Prozent (höchstens bis zur Grenze)
+  G.cardBonus = function (k) { var c = SI.CK[k]; if (!c || !c.per) return 0; return c.per * (c.max ? Math.min(c.max, G.card(k)) : G.card(k)); };
+  G.cardMaxed = function (k) { var c = SI.CK[k]; return !!(c && c.max && G.card(k) >= c.max); };
   G.sheepCount = function () { var n = 0; for (var k in G.S.sheep) n += G.S.sheep[k]; return n; };
   G.hasRar = function (r) { return SI.TYPES.some(function (t) { return t.r === r && G.S.found[t.id]; }); };
   G.penCount = function () { return G.S.pens.filter(Boolean).length; };
@@ -115,14 +128,14 @@
   G.MAXLVL = 5; // 4 Ausbauten
   G.penCap = function (lvl) { return 4 + (lvl - 1); };
   G.penMult = function (lvl) { return 1 + 0.25 * (lvl - 1); };
-  G.lvlCost = function (t, lvl) { return Math.ceil(Math.max(400, T[t].inc * 500) * Math.pow(4, lvl - 1)); };
+  G.lvlCost = function (t, lvl) { return Math.ceil(Math.max(400, T[t].inc * 500) * Math.pow(4, lvl - 1) * (1 - G.cardBonus('technik') / 100)); };
   G.barn = function () { return Object.keys(G.S.sheep).filter(function (t) { return G.extras(t) > 0; }); };
 
   G.dekoBonus = function () {
     var b = 0; G.S.dekoPlaced.forEach(function (p) { b += SI.DEKO_BONUS[SI.DK[p.id].r]; }); return b;
   };
   G.globalMult = function () {
-    return (1 + 0.1 * G.card('schere') + 0.05 * G.card('klee') + 0.05 * G.card('zeit')) * (1 + G.dekoBonus()) * G.rbMult();
+    return (1 + 0.05 * G.card('gold')) * (1 + G.dekoBonus()) * G.rbMult();
   };
   G.penIncome = function (i) {
     var p = G.S.pens[i]; if (!p) return 0;
@@ -136,7 +149,6 @@
   G.earn = function (x) { G.S.coins += x; G.S.run += x; G.S.total += x; };
   G.giveSec = function (s) { var a = Math.max(50, G.fullIncome() * s); G.earn(a); return a; };
   G.sellValue = function (t) { return Math.ceil(T[t].inc * 60); };
-  G.offlineMax = function () { return (8 + 2 * G.card('zeit')) * 3600; };
 
   G.addSheep = function (t, n) {
     n = n || 1;
@@ -218,7 +230,7 @@
       var c = rollCard(); S.cards[c.k] = G.card(c.k) + 1;
       return { card: c, box: b };
     }
-    var r = rollRarity(b.odds, 0.05 * G.card('glueck'));
+    var r = rollRarity(b.odds, G.cardBonus('glueck') / 100);
     var pool = SI.TYPES.filter(function (x) { return x.r === r && (x.ev || null) === (b.ev || null); });
     if (!pool.length) pool = SI.TYPES.filter(function (x) { return x.r === r && !x.ev; });
     var t = rnd(pool);
@@ -295,7 +307,7 @@
   G.breedCost = function (a, b) { return Math.ceil(30 * (T[a].inc + T[b].inc)); };
   G.breedTime = function (a, b) {
     var f = { c: 1, r: 2, e: 4, l: 8, m: 12, s: 10 };
-    return 30 * Math.max(f[T[a].r], f[T[b].r]) * Math.pow(0.85, G.card('zucht'));
+    return 30 * Math.max(f[T[a].r], f[T[b].r]) * (1 - G.cardBonus('hirte') / 100);
   };
   G.startBreed = function (a, b) {
     if (G.S.breed) return false;
@@ -311,7 +323,7 @@
       var ra = T[br.a].r === 's' ? 'l' : T[br.a].r, rb = T[br.b].r === 's' ? 'l' : T[br.b].r;
       var ri = Math.max(SI.RORDER.indexOf(ra), SI.RORDER.indexOf(rb));
       var r = SI.RORDER[ri];
-      if (Math.random() < 0.15 && ri < 4) r = SI.RORDER[ri + 1];
+      if (Math.random() < 0.15 + G.cardBonus('hirte') / 100 && ri < 4) r = SI.RORDER[ri + 1]; // Hirtenstab: mehr Glück
       t = rnd(SI.TYPES.filter(function (x) { return x.r === r && !x.ev; }));
     }
     var res = G.addSheep(t.id);
