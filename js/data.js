@@ -162,7 +162,8 @@ window.SI = window.SI || {};
   // Chance auf eine weitere Kiste derselben Seltenheit (bis 6 pro Platz)
   SI.DEKO_EXTRA = { c: 0.75, r: 0.6, e: 0.45, l: 0.3, m: 0.15 };
   SI.DEKO_MAX = 6;
-  SI.DEKO_PRICE = { c: [400, 240], r: [3000, 700], e: [25000, 1800], l: [200000, 4500], m: [2000000, 12000], taco: [140000, 3150] }; // Taco-Kiste: etwas günstiger als eine legendäre
+  // Kai: Deko-Kisten haben einen festen Preis (steigt nicht mehr mit dem Einkommen)
+  SI.DEKO_PRICE = { c: 1000, r: 15000, e: 400000, l: 20e6, m: 1.5e9, taco: 14e6 }; // Taco-Kiste: etwas günstiger als eine legendäre
 
   SI.ACH = [
     { k: 'box1', n: 'Erste Box', d: 'Öffne deine erste Mystery-Box', t: function (S) { return S.stats.boxes >= 1; } },

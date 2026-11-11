@@ -128,7 +128,7 @@
   G.MAXLVL = 5; // 4 Ausbauten
   G.penCap = function (lvl) { return 4 + (lvl - 1); };
   G.penMult = function (lvl) { return 1 + 0.25 * (lvl - 1); };
-  G.lvlCost = function (t, lvl) { return Math.ceil(Math.max(400, T[t].inc * 500) * Math.pow(4, lvl - 1) * (1 - G.cardBonus('technik') / 100)); };
+  G.lvlCost = function (t, lvl) { return Math.ceil(Math.max(400, T[t].inc * 500) * Math.pow(4, lvl - 1) * 0.6 * (1 - G.cardBonus('technik') / 100)); }; // Kai: nur noch 60 %
   G.barn = function () { return Object.keys(G.S.sheep).filter(function (t) { return G.extras(t) > 0; }); };
 
   G.dekoBonus = function () {
@@ -280,8 +280,7 @@
     return { date: date, slots: slots, left: function (i) { return slots[i].n - (cnt[i] || 0); } };
   };
   G.dekoPrice = function (r) {
-    var p = SI.DEKO_PRICE[r];
-    return Math.ceil(Math.max(p[0], G.fullIncome() * p[1]));
+    return SI.DEKO_PRICE[r];
   };
   G.giveDeko = function (r) {
     if (r === 'taco') { // Taco-Kiste: nur mexikanische Deko
@@ -359,7 +358,7 @@
 
   /* ---------- Rebirth ---------- */
   // Preise der Rebirths (mit einer Spieler-Simulation abgestimmt: 1. Rebirth ca. 5 Min., danach immer länger)
-  var RB_COST = [4e5, 1e7, 2e8, 2e10, 4e14, 1e16];
+  var RB_COST = [4e5, 1e7, 2e8, 2e10, 1e14, 2e15]; // Kai: die letzten zwei sind günstiger
   G.MAXRB = 6; // Kai: es gibt höchstens 6 Rebirths
   G.rebirthMax = function () { return G.S.rebirths >= G.MAXRB; };
   G.rebirthCost = function () { return RB_COST[Math.min(G.S.rebirths, RB_COST.length - 1)]; };
