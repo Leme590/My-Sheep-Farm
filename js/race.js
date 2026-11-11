@@ -128,7 +128,7 @@
       if (!b.myclub) h += '<div class="card"><p class="hint">Du bist in keinem Club. Tritt einem Club bei oder gründe einen, dann rennst du am Freitag mit!</p><button class="btn purple" data-act="sheet:club">🛡️ Zu den Clubs</button></div>';
       h += '<div class="card"><h3>So bekommt dein Club Punkte</h3><p class="hint">Alles, was du am Freitag machst, bringt deinem Club-Schaf Punkte (höchstens ' + MAXP + ' pro Spieler):</p><div class="rpts">' +
         PTS.map(function (x) { return '<span>' + x[2] + '<b class="num">+' + x[1] + '</b></span>'; }).join('') + '</div></div>';
-      h += '<div class="card"><h3>Belohnungen</h3>' + cupPrize() + '<p class="hint">Nach dem Rennen bekommt <b>jedes Mitglied</b> vom Club:<br>🥇 <b>Platz 1:</b> 30 Min. doppeltes Geld, eine <b>Turnier-Kiste</b> und die <b>exklusive Cup-Deko</b> der Woche<br>🥈 <b>Platz 2:</b> 30 Min. doppeltes Geld und eine Turnier-Kiste<br>🥉 <b>Platz 3:</b> 30 Min. doppeltes Geld und eine gute Kiste<br>🏃 <b>Alle anderen, die Punkte geholt haben:</b> 15 Min. doppeltes Geld</p></div>';
+      h += '<div class="card"><h3>Belohnungen</h3>' + cupPrize() + '<p class="hint">Nach dem Rennen bekommt <b>jedes Mitglied</b> vom Club:<br>🥇 <b>Platz 1:</b> 30 Min. doppeltes Geld, eine <b>Turnier-Kiste</b> und die <b>exklusive Cup-Deko</b> der Woche<br>🥈 <b>Platz 2:</b> 20 Min. doppeltes Geld und eine Turnier-Kiste<br>🥉 <b>Platz 3:</b> 10 Min. doppeltes Geld und eine gute Kiste<br>🏃 <b>Alle anderen, die Punkte geholt haben:</b> 5 Min. doppeltes Geld</p></div>';
       h += '<div class="card"><h3>Sieger vom letzten Freitag</h3>' + podium(b.last) + '</div>';
       if (R.mine) {
         var owner = me && R.mine.owner && R.mine.owner.toLowerCase() === me.username.toLowerCase();
@@ -160,12 +160,12 @@
         '<div class="btns"><button class="btn coin" data-act="raceReward">Belohnung abholen</button></div></div>');
     }).catch(function () { /* später nochmal */ });
   }
-  // Kai: Sieger bekommen 30 Min. doppeltes Geld, eine Turnier-Kiste und die exklusive Cup-Deko der Woche
+  // Kai: Sieger bekommen doppeltes Geld, eine Turnier-Kiste und die exklusive Cup-Deko der Woche
   function giveReward() {
     var r = reward; reward = null; if (!r) return;
     var bf = SI.quests && SI.quests.boxFor, p = r.place;
-    if (p <= 3) { G.addBoost(1800); U.flash('#ffe066'); U.toast('⚡ 30 Minuten doppeltes Geld!'); }
-    else { G.addBoost(900); U.flash('#ffe066'); U.toast('⚡ 15 Minuten doppeltes Geld!'); }
+    var mins = p === 1 ? 30 : p === 2 ? 20 : p === 3 ? 10 : 5; // Kai: 1. 30 Min., 2. 20 Min., 3. 10 Min.
+    G.addBoost(mins * 60); U.flash('#ffe066'); U.toast('⚡ ' + mins + ' Minuten doppeltes Geld!');
     if (p === 1) { var dk = SI.cupDekoFor(r.day); U.dekoReveal(G.addDeko(dk, false), 'm'); }
     if (p <= 2) U.turnierReveal(G.openTurnier());
     else if (p === 3) U.sheepReveal(G.openBox(bf ? bf(9000) : 'holz', true), '');
