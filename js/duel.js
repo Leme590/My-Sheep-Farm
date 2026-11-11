@@ -54,6 +54,8 @@
     D.pollBusy = true;
     N.duel.poll(tok()).then(function (r) {
       D.invites = r.invites || [];
+      // beim Besuch einer anderen Farm: erst nach Hause, bevor ein Duell den Spielstand ändert
+      if (G.visiting && ((r.results || []).length || (r.duel && r.duel.state !== 'invite')) && SI.visit) SI.visit.leave();
       (r.results || []).forEach(settle);
       setCur(r.duel);
       showInvites();
@@ -99,6 +101,7 @@
     if (done(v.id)) { N.duel.ack(tok(), v.id).catch(function () {}); return; }
     var S = G.S, escd = (S.duelEsc || {})[v.id], info = { win: null, gain: null, lost: null, rescued: false };
     if (v.state === 'done') {
+      S.stats.duels = (S.stats.duels || 0) + 1;
       if (v.winner === 2) { if (escd) G.getStake(escd); info.win = 'draw'; }
       else if (mine(v, v.winner)) {
         if (escd) G.getStake(escd);

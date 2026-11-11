@@ -92,6 +92,7 @@
   }
   F.toWorld = function (sx, sy) { return { x: (sx - W / 2) / cam.z + cam.x, y: ((sy - H / 2) / cam.z + cam.yp) / K }; };
   F.toScreen = function (wx, wy, h) { return { x: (wx - cam.x) * cam.z + W / 2, y: (wy * K - (h || 0) - cam.yp) * cam.z + H / 2 }; };
+  F.cam = function (c) { if (c) { cam.x = c.x; cam.yp = c.yp; cam.z = c.z; clamp(); } return { x: cam.x, yp: cam.yp, z: cam.z }; };
   F.focusPen = function (i) { var r = F.plotRect(i); cam.x = r.x + r.w / 2; cam.yp = (r.y + r.h / 2) * K; clamp(); };
 
   /* ---------- Eingabe: wischen, zoomen, tippen ---------- */
@@ -185,6 +186,7 @@
     else { if (moveOrig) { p.x = moveOrig.x; p.y = moveOrig.y; } F.cb.toast && F.cb.toast('Da passt sie nicht hin. Zieh sie auf freie Wiese.'); SI.sfx && SI.sfx.play('cant'); }
   }
   function tap(sx, sy) {
+    if (G.visiting) return; // fremde Farm: nur anschauen
     var w = F.toWorld(sx, sy);
     // 1. Ereignisse
     if (ev.gold) {
@@ -669,6 +671,8 @@
     ctx.globalAlpha = 1;
   }
   var newMarks = {};
+  // beim Besuch einer anderen Farm alles zurücksetzen, was zur eigenen Farm gehört
+  F.visitReset = function () { agents = {}; ev.gold = null; if (ev.wolf) { ev.wolf = null; G.wolfActive = false; } ev.next = Date.now() + 30000; };
   F.markNew = function (t) { newMarks[t] = Date.now() + 15000; };
   function drawNewMarks() {
     var now = Date.now();

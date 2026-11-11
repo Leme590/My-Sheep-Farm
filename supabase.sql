@@ -583,3 +583,55 @@ grant execute on function public.sp_duel_move(uuid, uuid, int) to anon;
 grant execute on function public.sp_duel_leave(uuid, uuid) to anon;
 grant execute on function public.sp_duel_ack(uuid, uuid) to anon;
 grant execute on function public.sp_duel_status(uuid, text[]) to anon;
+
+-- ===================== Farmen besuchen und Herzen (Teil 4) =====================
+-- Kann auch nachträglich ausgeführt werden: einfach diese ganze Datei nochmal "Run".
+alter table public.players add column if not exists hearts integer not null default 0;
+
+create table if not exists public.farm_hearts (
+  owner  uuid not null references public.players(id) on delete cascade,
+  giver  uuid not null references public.players(id) on delete cascade,
+  day    date not null default current_date,
+  primary key (owner, giver, day)
+);
+alter table public.farm_hearts enable row level security;
+revoke all on public.farm_hearts from anon, authenticated;
+
+-- Farm von einem Spieler ansehen: nur das, was man auf der Farm sieht (kein Geld, keine Duelle)
+create or replace function public.sp_farm_visit(p_token uuid, p_name text)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players; r players;
+begin
+  select * into me from players where token = p_token;
+  if me.id is null then raise exception 'bad_token'; end if;
+  select * into r from players where lower(username) = lower(trim(p_name));
+  if r.id is null then raise exception 'no_player'; end if;
+  return json_build_object(
+    'username', r.username,
+    'save', case when r.save is null then null else jsonb_build_object(
+      'v', r.save->'v', 'pens', r.save->'pens', 'dekoPlaced', r.save->'dekoPlaced', 'sheep', r.save->'sheep',
+      'rebirths', r.save->'rebirths', 'cards', r.save->'cards', 'found', r.save->'found') end,
+    'hearts', r.hearts,
+    'income', r.income,
+    'liked', exists (select 1 from farm_hearts h where h.owner = r.id and h.giver = me.id and h.day = current_date),
+    'me', r.id = me.id);
+end $$;
+
+-- Ein Herz pro Farm und Tag
+create or replace function public.sp_farm_heart(p_token uuid, p_name text)
+returns integer language plpgsql security definer set search_path = public as $$
+declare me players; r players; n integer;
+begin
+  select * into me from players where token = p_token;
+  if me.id is null then raise exception 'bad_token'; end if;
+  select * into r from players where lower(username) = lower(trim(p_name));
+  if r.id is null then raise exception 'no_player'; end if;
+  if r.id = me.id then raise exception 'heart_self'; end if;
+  insert into farm_hearts (owner, giver) values (r.id, me.id) on conflict do nothing;
+  if not found then raise exception 'heart_done'; end if;
+  update players set hearts = hearts + 1 where id = r.id returning hearts into n;
+  return n;
+end $$;
+
+grant execute on function public.sp_farm_visit(uuid, text) to anon;
+grant execute on function public.sp_farm_heart(uuid, text) to anon;

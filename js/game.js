@@ -11,7 +11,7 @@
     var s = freshRun();
     s.v = 2; s.total = 0; s.rebirths = 0; s.found = { wiese: 1 }; s.dekoFound = {}; s.dekoInv = {}; s.dekoPlaced = [];
     s.dekoShop = { date: '', cnt: {} }; s.ach = {};
-    s.stats = { boxes: 0, wolves: 0, golden: 0, breeds: 0, taps: 0, dekoBoxes: 0, nights: 0 };
+    s.stats = { boxes: 0, wolves: 0, golden: 0, breeds: 0, taps: 0, dekoBoxes: 0, nights: 0, lvls: 0, duels: 0, duelWins: 0, visits: 0, hearts: 0 };
     s.daily = { last: '', streak: 0 }; s.playtime = 0; s.lastSave = Date.now(); s.lastNight = -1;
     return s;
   };
@@ -135,8 +135,12 @@
     var b = 0; G.S.dekoPlaced.forEach(function (p) { b += SI.DEKO_BONUS[SI.DK[p.id].r]; }); return b;
   };
   G.globalMult = function () {
-    return (1 + 0.05 * G.card('gold')) * (1 + G.dekoBonus()) * G.rbMult();
+    return (1 + 0.05 * G.card('gold')) * (1 + G.dekoBonus()) * G.rbMult() * G.boostMult();
   };
+  // Geld-Booster aus Aufgaben: doppeltes Geld für eine Weile
+  G.boostLeft = function () { var b = G.S.boost; return b && b.end > Date.now() ? (b.end - Date.now()) / 1000 : 0; };
+  G.boostMult = function () { return G.boostLeft() > 0 ? 2 : 1; };
+  G.addBoost = function (sec) { var now = Date.now(), b = G.S.boost; G.S.boost = { end: Math.max(now, b && b.end || 0) + sec * 1000 }; };
   G.penIncome = function (i) {
     var p = G.S.pens[i]; if (!p) return 0;
     var n = Math.min(p.n || 0, G.penCap(p.lvl));
@@ -147,7 +151,7 @@
   G.fullIncome = function () { return G.baseIncome() * G.globalMult(); };
   G.income = function () { return G.fullIncome() * (G.wolfActive ? 0.5 : 1); };
   G.earn = function (x) { G.S.coins += x; G.S.run += x; G.S.total += x; };
-  G.giveSec = function (s) { var a = Math.max(50, G.fullIncome() * s); G.earn(a); return a; };
+  G.giveSec = function (s) { var a = Math.max(50, G.fullIncome() / G.boostMult() * s); G.earn(a); return a; };
   G.sellValue = function (t) { return Math.ceil(T[t].inc * 60); };
 
   G.addSheep = function (t, n) {
@@ -169,7 +173,7 @@
   G.levelUp = function (i) {
     var p = G.S.pens[i]; if (!p || p.lvl >= G.MAXLVL) return false;
     var c = G.lvlCost(p.t, p.lvl); if (G.S.coins < c) return false;
-    G.S.coins -= c; p.lvl++;
+    G.S.coins -= c; p.lvl++; G.S.stats.lvls = (G.S.stats.lvls || 0) + 1;
     var ex = Math.min(G.extras(p.t), G.penCap(p.lvl) - p.n); if (ex > 0) p.n += ex; // wartende Schafe ziehen gleich ein
     return true;
   };
@@ -208,6 +212,7 @@
     return ent[ent.length - 1][0];
   }
   G.rollRarity = rollRarity;
+  G.rollCard = function () { return rollCard(); };
   function rollCard() {
     var pool = SI.CARDS.filter(function (c) { return !c.max || G.card(c.k) < c.max; });
     var sum = pool.reduce(function (a, c) { return a + c.w; }, 0), x = Math.random() * sum;

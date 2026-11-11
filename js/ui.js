@@ -211,7 +211,7 @@
     if (!started) {
       started = true;
       F.cb = { pop: pop, toast: toast, change: refresh, pen: openPen, empty: openEmpty, dekoTap: dekoTap, moved: dekoMoved, penMoved: penMoved, house: function () { openSheet('mehr'); },
-        place: placeDeko, pickup: pickupDeko, merchant: spawnMerchant, merchantTap: function () { SFX('merchant'); if (G.merch && G.merch.hide) { G.merch.hide = false; renderMerchant(); } openSheet('boxen'); }, busy: function () { return modalOpen; } };
+        place: placeDeko, pickup: pickupDeko, merchant: spawnMerchant, merchantTap: function () { SFX('merchant'); if (G.merch && G.merch.hide) { G.merch.hide = false; renderMerchant(); } openSheet('boxen'); }, busy: function () { return modalOpen || !!G.visiting; } };
       F.init($('#farm'));
       setInterval(tick, 250);
     }
@@ -235,9 +235,9 @@
 
   /* ---------- Speichern ---------- */
   var cloudBusy = false, lastCloud = 0;
-  function saveLocal() { if (!me) return; G.S.lastSave = Date.now(); N.lsSet(backupKey(), G.S); }
+  function saveLocal() { if (!me || G.visiting) return; G.S.lastSave = Date.now(); N.lsSet(backupKey(), G.S); }
   function saveCloud() {
-    if (!me || cloudBusy) return; cloudBusy = true; lastCloud = Date.now();
+    if (!me || cloudBusy || G.visiting) return; cloudBusy = true; lastCloud = Date.now();
     G.S.lastSave = Date.now();
     N.save(me.token, G.S, G.fullIncome(), G.S.playtime, G.S.rebirths).catch(function (e) {
       if ((e && e.message || '').indexOf('bad_token') >= 0) { N.setSession(null); toast('Bitte melde dich neu an.'); }
@@ -251,6 +251,7 @@
   function tick() {
     var now = Date.now(), dt = Math.min((now - lastT) / 1000, 1); lastT = now; // nie nachholen, wenn das Spiel zu war
     if (!me) return;
+    if (G.visiting) { lastCloud = now; return; } // beim Besuch läuft auf der eigenen Farm nichts
     G.tick(dt, !document.hidden);
     if (SI.sfx && !document.hidden) SI.sfx.ambient(G.cycle().night, G.sheepCount());
     if (G.merch && now > G.merch.end) { G.merch = null; renderMerchant(); toast('Der Händler ist weitergezogen.'); }
@@ -262,7 +263,8 @@
   }
   function hud() {
     $('#coinNum').textContent = fmt(G.S.coins);
-    var inc = $('#incNum'); inc.textContent = '+' + fmt(G.income()) + ' pro Sek.' + (G.wolfActive ? ' (Wolf!)' : '');
+    var inc = $('#incNum'), bl = G.boostLeft(), bn = $('#boostNum'); inc.textContent = '+' + fmt(G.income()) + ' pro Sek.' + (G.wolfActive ? ' (Wolf!)' : '');
+    bn.hidden = !(bl > 0); if (bl > 0) bn.textContent = '⚡×2 · ' + Math.floor(bl / 60) + ':' + ('0' + Math.floor(bl % 60)).slice(-2);
     inc.classList.toggle('bad', G.wolfActive);
     var c = G.cycle(), m = Math.floor(c.left / 60), s = Math.floor(c.left % 60);
     var ck = $('#clock'), want = c.night ? 'n' : 'd';
@@ -674,9 +676,10 @@
       // Tabelle mit allen Spielern und ihren Plätzen (Kai)
       h += '<h3 class="btitle">Alle Spieler</h3><div class="board"><div class="brow bhead"><span class="pl">#</span><span></span><span class="nm">Spieler</span><b>' + BTABS.filter(function (x) { return x[0] === boardTab; })[0][1] + '</b></div>' +
         boardData.map(function (r, k) {
-          return '<div class="brow' + (k < 3 ? ' top' + (k + 1) : '') + (isMe(r) ? ' me' : '') + '"><span class="pl">' + (k + 1) + '</span><img src="' + avatar(r.username) + '" alt=""><span class="nm">' + esc(r.username) + (isMe(r) ? ' <small>(du)</small>' : '') + '</span><b class="num">' + boardVal(r.value) + '</b></div>';
+          return '<div class="brow' + (k < 3 ? ' top' + (k + 1) : '') + (isMe(r) ? ' me' : ' canvisit') + '"' + (isMe(r) ? '' : ' data-act="visit:' + esc(r.username) + '"') + '><span class="pl">' + (k + 1) + '</span><img src="' + avatar(r.username) + '" alt=""><span class="nm">' + esc(r.username) + (isMe(r) ? ' <small>(du)</small>' : ' <small class="vis">🏡</small>') + '</span><b class="num">' + boardVal(r.value) + '</b></div>';
         }).join('') + '</div>';
       var mine = -1; boardData.forEach(function (r, i) { if (isMe(r)) mine = i; });
+      h += '<p class="hint center">Tippe auf einen Spieler, um seine Farm zu besuchen.</p>';
       h += '<div class="myrank">' + (mine >= 0 ? 'Du bist auf <b>Platz ' + (mine + 1) + '</b>!' : 'Du bist noch nicht in den Top ' + boardData.length + '. Weiter so!') + '</div>';
     }
     if (!N.online) h += '<p class="hint center">Test-Modus: Hier stehen nur Accounts von diesem Gerät.</p>';
@@ -851,6 +854,7 @@
   /* ---------- für duel.js ---------- */
   SI.ui = { toast: toast, modal: modal, nextModal: nextModal, closeModal: closeModal, esc: esc, SFX: SFX, flash: function (c) { flash(c); }, sparks: sparks,
     me: function () { return me; }, refresh: refresh, renderSheet: renderSheet, openSheet: openSheet, closeSheet: closeSheet,
+    sheepReveal: sheepReveal, dekoReveal: dekoReveal, setMode: function (m) { setMode(m); },
     sheet: function () { return sheet; }, saveLocal: saveLocal, saveCloud: saveCloud, views: VIEWS, modalOpen: function () { return modalOpen; }, hooks: [] };
 
   /* ---------- Start ---------- */

@@ -53,6 +53,57 @@ h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:.01em;margin:
 .money small{display:block;color:var(--grass);font-weight:900;font-size:12.5px;white-space:nowrap}
 .money small.bad{color:var(--danger)}
 .hud .sp{flex:1}
+.hleft{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0;pointer-events:none}
+.hleft > *{pointer-events:auto}
+.lchips{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.hchip.questchip,.hchip.visitchip{position:relative;border:3px solid var(--out)!important;box-shadow:0 3px 0 var(--out)!important;font-family:var(--display);font-weight:400;font-size:14px;color:#fff;text-shadow:var(--ts-s)}
+.hchip.questchip{background:linear-gradient(#ffd36b,#f39a1e)}
+.hchip.visitchip{background:linear-gradient(#9fe1ff,#3f8fe8)}
+.hchip .dot{position:absolute;right:-8px;top:-8px;width:18px;height:18px;border-radius:50%;border:2.5px solid var(--out);background:#ff3b30;animation:mbang 1.2s ease-in-out infinite}
+.money small.boostnum{color:#fff;background:linear-gradient(#ffb300,#ff7a00);border-radius:8px;padding:0 6px;margin-top:2px;text-shadow:0 1px 0 rgba(0,0,0,.35);animation:mbob 1.6s ease-in-out infinite}
+.money small[hidden]{display:none}
+/* Aufgaben */
+.qcard.w{background:linear-gradient(#fff,#f3ecff)}
+.qrow,.qbonus{display:flex;align-items:center;gap:10px;padding:9px 10px;border:2.5px solid var(--out);border-radius:16px;background:#fff;margin-top:8px;box-shadow:0 3px 0 var(--out)}
+.qrow.ready{background:linear-gradient(#fff9d6,#ffe9a8);animation:qready 1.4s ease-in-out infinite}
+.qrow.claimed,.qbonus.claimed{opacity:.6;background:#eef3e8}
+@keyframes qready{50%{box-shadow:0 3px 0 var(--out),0 0 14px rgba(255,190,40,.9)}}
+.qic{font-size:26px;width:34px;text-align:center;flex:none}
+.qmid{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.qmid b{font-size:14px;line-height:1.2}
+.qbar{position:relative;height:16px;border-radius:9px;background:#e4ead9;border:2px solid var(--out);overflow:hidden}
+.qbar i{display:block;height:100%;background:linear-gradient(#8be06a,#3fae2a);transition:width .5s}
+.qcard.w .qbar i{background:linear-gradient(#c9a2ff,#8a4fe0)}
+.qbar span{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;text-shadow:0 1px 0 #000,0 0 3px #000}
+.qrw{display:flex;align-items:center;gap:5px;font-weight:800;color:#8a5a00;font-size:12px}
+.qrw img{width:20px;height:20px;object-fit:contain}
+.qbtn{padding:8px 12px;font-size:14px;flex:none}
+.qdone{font-size:22px;color:var(--grass);font-weight:900;flex:none;width:34px;text-align:center}
+.qlock{font-size:20px;flex:none;width:34px;text-align:center;opacity:.6}
+.qswap{flex:none;width:36px;height:36px;border-radius:50%;border:2.5px solid var(--out);background:#fff3d6;font-size:16px;box-shadow:0 2px 0 var(--out)}
+.qbonus{background:linear-gradient(#ffe0f0,#fff)}
+.qbonus.ready{background:linear-gradient(#ffd0ea,#ffb3d9);animation:qready 1.2s ease-in-out infinite}
+/* Farm besuchen */
+.vme{display:flex;align-items:center;gap:12px}
+.vbig{font-size:40px}
+.durow input#visName{flex:1;min-width:0}
+body.visiting .hud,body.visiting .nav,body.visiting #merchant,body.visiting .modebar{visibility:hidden}
+.visitbar{position:fixed;z-index:12;left:12px;right:12px;margin:0 auto;max-width:460px;top:calc(env(safe-area-inset-top,0px) + 10px);background:linear-gradient(#fff,#eaf6ff);
+  border:3px solid var(--out);border-radius:20px;box-shadow:0 4px 0 var(--out),0 10px 24px rgba(0,0,0,.25);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.visitbar[hidden]{display:none}
+.vtop{display:flex;align-items:center;gap:10px}
+.vic{font-size:30px}
+.vt{flex:1;min-width:0}.vt small{display:block;font-weight:800;color:#6a7a8a;font-size:12px}.vt b{display:block;font-family:var(--display);font-weight:400;font-size:20px;color:#2d7bd8;text-shadow:0 1px 0 #fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vhome{padding:8px 12px;font-size:14px}
+.vstats{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;font-weight:800}
+.vheart{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;align-items:center;gap:8px;border:3px solid var(--out);border-radius:999px;
+  background:linear-gradient(#ff8fb8,#e8336f);color:#fff;font-family:var(--display);font-size:20px;padding:10px 20px;white-space:nowrap;box-shadow:0 5px 0 var(--out),0 0 18px rgba(255,80,140,.6);text-shadow:var(--ts-s);animation:vbeat 1.3s ease-in-out infinite}
+.vheart span{font-size:24px}
+.vheart b{background:#fff;color:#e8336f;border:2px solid var(--out);border-radius:999px;padding:0 9px;font-size:16px;text-shadow:none;font-weight:400}
+.vheart.on{background:linear-gradient(#ffd0e1,#ff9cc0);animation:none}
+@keyframes vbeat{50%{transform:translateX(-50%) scale(1.06)}}
+.brow.canvisit{cursor:pointer}
+.brow .vis{opacity:.7}
 .chips{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .chip-row{display:flex;gap:6px}
 .hchip{border:0;background:var(--panel);border-radius:14px;padding:6px 10px;font-weight:900;font-size:13px;box-shadow:0 3px 0 rgba(0,0,0,.18);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
@@ -707,9 +758,15 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 <canvas id="farm" aria-label="Deine Schaf-Farm"></canvas>
 
 <div class="hud" id="hud" hidden>
-  <div class="money">
-    <img id="coinImg" alt="">
-    <div style="min-width:0"><b class="num" id="coinNum">0</b><small class="num" id="incNum">+0 pro Sek.</small></div>
+  <div class="hleft">
+    <div class="money">
+      <img id="coinImg" alt="">
+      <div style="min-width:0"><b class="num" id="coinNum">0</b><small class="num" id="incNum">+0 pro Sek.</small><small class="num boostnum" id="boostNum" hidden></small></div>
+    </div>
+    <div class="lchips">
+      <button class="hchip questchip" data-act="sheet:quests" aria-label="Aufgaben">📜 Aufgaben<i class="dot" id="dotQuest" hidden></i></button>
+      <button class="hchip visitchip" data-act="sheet:besuch" aria-label="Farmen besuchen">🏡 Besuchen</button>
+    </div>
   </div>
   <div class="sp"></div>
   <div class="chips">
@@ -766,6 +823,8 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 <script src="js/farm.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/duel.js"></script>
+<script src="js/quest.js"></script>
+<script src="js/visit.js"></script>
 <!--APP-END-->
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

@@ -18,6 +18,8 @@
     code_format: 'Ein Code darf 3 bis 32 Zeichen haben: Buchstaben, Zahlen, - und _.',
     not_admin: 'Dafür brauchst du Admin-Rechte.',
     no_player: 'Diesen Spieler gibt es nicht.',
+    heart_self: 'Deiner eigenen Farm kannst du kein Herz geben.',
+    heart_done: 'Dieser Farm hast du heute schon ein Herz gegeben.',
     bad_amount: 'Bitte gib einen gültigen Betrag ein.',
     network: 'Keine Verbindung zum Server. Prüfe dein Internet und versuch es nochmal.'
   };
@@ -414,6 +416,45 @@
     status: function (tok, names) { return ONLINE ? rpc('sp_duel_status', { p_token: tok, p_names: names }).then(function (r) { return r || []; }) : LD.status(tok, names); }
   };
 
+
+  /* ---------- Farmen besuchen ---------- */
+  // Nur das, was man auf der Farm sieht (kein Geld, keine Duell-Daten)
+  function farmPart(sv) {
+    if (!sv) return null;
+    return { v: sv.v, pens: sv.pens, dekoPlaced: sv.dekoPlaced, sheep: sv.sheep, rebirths: sv.rebirths, cards: sv.cards, found: sv.found };
+  }
+  // Test-Modus: der Schafbot hat eine schöne Beispiel-Farm
+  function botFarm() {
+    return { v: 2, rebirths: 2, sheep: { wiese: 6, regen: 5, feuer: 4, drache: 2, nacht: 3 }, cards: { gold: 3 }, found: {},
+      pens: [{ t: 'drache', lvl: 4, n: 2 }, { t: 'feuer', lvl: 3, n: 4 }, { t: 'regen', lvl: 3, n: 5 }, { t: 'wiese', lvl: 5, n: 6 }, { t: 'nacht', lvl: 2, n: 3 }],
+      dekoPlaced: [] };
+  }
+  var LF = {
+    visit: function (tok, name) {
+      var f = LOCAL.find(tok); if (!f) return Promise.reject(new Error('bad_token'));
+      var k = String(name || '').trim().toLowerCase(), meK = f.k;
+      if (k === N.BOT.toLowerCase()) { var bh = lsGet('schaf_bothearts', {}); return Promise.resolve({ username: N.BOT, save: botFarm(), hearts: bh.n || 0, liked: bh[meK] === dayKey(), income: 0, me: false }); }
+      var acc = f.a[k]; if (!acc) return Promise.reject(new Error('no_player'));
+      return Promise.resolve({ username: acc.username, save: farmPart(acc.save), hearts: acc.hearts || 0, liked: (acc.heartsBy || {})[meK] === dayKey(), income: acc.income || 0, me: k === meK });
+    },
+    heart: function (tok, name) {
+      var f = LOCAL.find(tok); if (!f) return Promise.reject(new Error('bad_token'));
+      var k = String(name || '').trim().toLowerCase(), meK = f.k;
+      if (k === meK) return Promise.reject(new Error('heart_self'));
+      if (k === N.BOT.toLowerCase()) {
+        var bh = lsGet('schaf_bothearts', {}); if (bh[meK] === dayKey()) return Promise.reject(new Error('heart_done'));
+        bh[meK] = dayKey(); bh.n = (bh.n || 0) + 1; lsSet('schaf_bothearts', bh); return Promise.resolve(bh.n);
+      }
+      var acc = f.a[k]; if (!acc) return Promise.reject(new Error('no_player'));
+      acc.heartsBy = acc.heartsBy || {}; if (acc.heartsBy[meK] === dayKey()) return Promise.reject(new Error('heart_done'));
+      acc.heartsBy[meK] = dayKey(); acc.hearts = (acc.hearts || 0) + 1; LOCAL.put(f.a); return Promise.resolve(acc.hearts);
+    }
+  };
+  function dayKey() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  N.farm = {
+    visit: function (tok, name) { return ONLINE ? rpc('sp_farm_visit', { p_token: tok, p_name: String(name || '').trim() }) : LF.visit(tok, name); },
+    heart: function (tok, name) { return ONLINE ? rpc('sp_farm_heart', { p_token: tok, p_name: String(name || '').trim() }) : LF.heart(tok, name); }
+  };
 
   N.session = function () { return lsGet('schaf_session', null); };
   N.setSession = function (s) { if (s) lsSet('schaf_session', s); else { try { localStorage.removeItem('schaf_session'); } catch (e) { /* egal */ } } };
