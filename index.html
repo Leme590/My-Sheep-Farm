@@ -517,6 +517,24 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 .dupm{display:flex;gap:4px}
 .dupm button{width:32px;height:28px;border:2px solid var(--out);border-radius:9px;background:#fff;font-family:var(--display);font-size:18px;line-height:1}
 .dupm button:disabled{opacity:.35}
+.quick .duallin{background:linear-gradient(#ff6b5b,#d81e1e);color:#fff;text-shadow:var(--ts-s);font-family:var(--display);font-size:15px;padding:6px 14px;box-shadow:0 3px 0 var(--out),0 0 10px rgba(255,40,40,.55);animation:allinpulse 1.6s ease-in-out infinite}
+.quick .duallin:active,.quick .duallall:active{transform:scale(.94)}
+@keyframes allinpulse{50%{box-shadow:0 3px 0 var(--out),0 0 18px rgba(255,40,40,.9);transform:scale(1.04)}}
+.quick .duallall{flex-basis:100%;position:relative;overflow:hidden;border:3px solid #111;color:#fff;font-family:var(--display);font-size:20px;letter-spacing:1px;padding:10px 14px;text-shadow:0 2px 0 #000,0 0 8px rgba(255,60,60,.9);background:linear-gradient(115deg,#111 0%,#c70000 25%,#111 50%,#c70000 75%,#111 100%);background-size:300% 100%;animation:allall 2.4s linear infinite,allglow 1.2s ease-in-out infinite alternate}
+.quick .duallall span{position:relative;z-index:1;display:inline-block;animation:allbeat 1.2s ease-in-out infinite}
+.quick .duallall::after{content:'';position:absolute;top:0;bottom:0;width:40%;left:-50%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:allshine 2.4s ease-in-out infinite}
+@keyframes allall{to{background-position:-150% 0}}
+@keyframes allglow{from{box-shadow:0 4px 0 #000,0 0 8px rgba(255,0,0,.5)}to{box-shadow:0 4px 0 #000,0 0 26px rgba(255,0,0,1),0 0 4px #fff inset}}
+@keyframes allbeat{50%{transform:scale(1.08)}}
+@keyframes allshine{60%,100%{left:130%}}
+@media (prefers-reduced-motion:reduce){.quick .duallin,.quick .duallall,.quick .duallall span,.quick .duallall::after{animation:none}}
+.late2{animation:latein .4s ease-out 1.3s both}
+.duend.late,.late{animation:latein .4s ease-out 2.1s both}.duend.late2{animation:latein .4s ease-out 1.3s both}
+.rsc{display:grid}.rsc span{grid-area:1/1}
+.rsc .sold{animation:rhidesc .01s linear 1.6s forwards}.rsc .snew{opacity:0;animation:rscin .45s cubic-bezier(.2,1.8,.4,1) 1.6s forwards}
+@keyframes rhidesc{to{opacity:0}}@keyframes rscin{from{opacity:1;transform:scale(2)}to{opacity:1;transform:scale(1)}}
+.rstar.on.new{animation:rstarin .5s cubic-bezier(.2,1.8,.4,1) 1.6s both}
+@keyframes rstarin{from{color:#ccc;transform:scale(.6)}50%{transform:scale(1.7) rotate(20deg)}}
 .quick .dusame{background:linear-gradient(#9fe1ff,#4a9cf5);color:#fff;text-shadow:var(--ts-s)}
 .dustake{display:flex;flex-direction:column;gap:6px}
 .dumoney{display:flex;align-items:center;gap:6px;font-family:var(--display);font-size:22px;color:#e09a00;text-shadow:0 1px 0 #fff}

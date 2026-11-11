@@ -118,7 +118,11 @@
     info.why = why;
     if (D.shownId === v.id || (D.cur && D.cur.id === v.id)) {
       D.final = v; D.finalInfo = info; D.cur = null; D.shownId = v.id;
-      if (info.win === 'me') { SFX('win'); U.flash('#ffe066'); } else if (info.win === 'opp') SFX('hit'); else SFX('pop');
+      var wait = v.game && v.state === 'done' ? (v.mode === 'rps' ? 2100 : 1300) : 0;
+      setTimeout(function () {
+        if (D.final !== v) return;
+        if (info.win === 'me') { SFX('win'); U.flash('#ffe066'); } else if (info.win === 'opp') SFX('hit'); else SFX('pop');
+      }, wait);
       render();
     } else if (v.state === 'done') {
       U.modal('<div class="modal"><h2>' + (info.win === 'me' ? 'Duell gewonnen!' : info.win === 'opp' ? 'Duell verloren' : 'Unentschieden') + '</h2>' +
@@ -245,9 +249,9 @@
       h += '<div class="ducard"><h3>1. Spiel aussuchen</h3><div class="dumodes" id="duModes"></div><p class="hint" id="duModeBy"></p></div>';
       h += '<div class="ducard"><h3>2. Dein Einsatz</h3>' +
         '<label class="field">Geld (z. B. 500, 25K, 3M)<input id="duMoney" data-duel="money" inputmode="decimal" autocomplete="off" placeholder="0"></label>' +
-        '<div class="quick"><button data-act="duMoneyQ:0">0</button><button data-act="duMoneyQ:10">10 %</button><button data-act="duMoneyQ:50">50 %</button><button data-act="duMoneyQ:100">Alles Geld</button></div>' +
+        '<div class="quick"><button data-act="duMoneyQ:0">0</button><button data-act="duMoneyQ:10">10 %</button><button data-act="duMoneyQ:50">50 %</button><button class="duallin" data-act="duMoneyQ:100">💰 ALL IN Geld</button></div>' +
         '<div class="dupick" id="duPick"></div>' +
-        '<div class="quick"><button data-act="duAllSheep">Alle Schafe</button><button data-act="duNoSheep">Keine Schafe</button><button data-act="duAll">Alles setzen</button><button class="dusame" data-act="duSame">Gleich wie ' + esc(v.opp) + '</button></div></div>';
+        '<div class="quick"><button class="duallin" data-act="duAllSheep">🐑 ALL IN Schafe</button><button data-act="duNoSheep">Keine Schafe</button><button class="duallall" data-act="duAll"><span>🔥 ALLES SETZEN 🔥</span></button><button class="dusame" data-act="duSame">Gleich wie ' + esc(v.opp) + '</button></div></div>';
       h += '<div class="ducard"><h3>Einsatz von ' + esc(v.opp) + '</h3><div id="duOpp"></div></div>';
       h += '<div class="duready" id="duReady"></div>';
     } else if (ph === 'cd' || ph === 'play') {
@@ -257,12 +261,11 @@
     } else {
       var info = D.finalInfo || {};
       var title = v.state === 'gone' ? 'Kein Duell' : info.win === 'me' ? 'Gewonnen!' : info.win === 'opp' ? 'Verloren' : 'Unentschieden';
-      var rpsEnd = v.game && v.mode === 'rps';
-      if (rpsEnd) h += '<div class="dugame" id="duGame"></div>';
-      h += '<div class="duend ' + (info.win || 'none') + (rpsEnd ? ' late' : '') + '"><div class="dubig">' + (info.win === 'me' ? '🏆' : info.win === 'opp' ? '😢' : '🤝') + '</div><h2>' + title + '</h2>' +
+      var gEnd = v.game && v.state === 'done', lateC = gEnd ? (v.mode === 'rps' ? 'late' : 'late2') : '';
+      if (gEnd) h += '<div class="dugame" id="duGame"></div>';
+      h += '<div class="duend ' + (info.win || 'none') + ' ' + lateC + '"><div class="dubig">' + (info.win === 'me' ? '🏆' : info.win === 'opp' ? '😢' : '🤝') + '</div><h2>' + title + '</h2>' +
         (info.why ? '<p>' + esc(info.why) + '</p>' : '') + resultLines(info) + '</div>';
-      if (v.game && v.mode !== 'rps') h += '<div class="dugame small" id="duGame"></div>';
-      h += '<div class="' + (rpsEnd ? 'late' : '') + '">';
+      h += '<div class="' + lateC + '">';
       h += '<div class="btns"><button class="btn coin" data-act="duDone">Fertig</button>' +
         (v.opp && v.opp !== '' ? '<button class="btn red" data-act="duAgain:' + esc(v.opp) + '">⚔️ Revanche</button>' : '') +
         '<button class="btn ghost" data-act="duFav:' + esc(v.opp) + '" id="duFavBtn">' + (isFav(v.opp) ? '★ Favorit' : '☆ Als Favorit') + '</button></div>';
@@ -293,7 +296,8 @@
       if (c && D.cd !== s) { D.cd = s; c.innerHTML = '<b>' + (s > 3 ? 3 : s) + '</b>'; SFX('click'); }
     }
     if (ph === 'play' && D.cd !== 0) { D.cd = 0; SFX('unlock'); }
-    if (ph === 'cd' || ph === 'play' || ph === 'end') { var g = $('#duGame'); if (g && g.dataset.ver !== String(v.ver) + ph) { g.dataset.ver = String(v.ver) + ph; g.innerHTML = gameHtml(v, ph); } }
+    var anim = v.mode === 'rps' && ph === 'play' && D.rpsAt && Date.now() - D.rpsAt < 2400;
+    if (!anim && (ph === 'cd' || ph === 'play' || ph === 'end')) { var g = $('#duGame'); if (g && g.dataset.ver !== String(v.ver) + ph) { g.dataset.ver = String(v.ver) + ph; g.innerHTML = gameHtml(v, ph); } }
     if (ph === 'play' || ph === 'cd') timeBar(v);
   }
   function timeBar(v) {
@@ -313,7 +317,7 @@
     Object.keys(G.S.sheep).forEach(function (t) { if (T[t] && G.S.sheep[t] > 0 && T[t].inc > inc) { inc = T[t].inc; best = t; } });
     return T[best];
   }
-  function stars(n) { var h = ''; for (var i = 0; i < 3; i++) h += '<i class="rstar' + (i < n ? ' on' : '') + '">★</i>'; return h; }
+  function stars(n, nw) { var h = ''; for (var i = 0; i < 3; i++) h += '<i class="rstar' + (i < n ? ' on' : '') + (nw && i === n - 1 ? ' new' : '') + '">★</i>'; return h; }
   function rpsImg(i, cls) { return '<img class="' + (cls || '') + '" src="' + A.rpsURL(i) + '" alt="' + RPS[i].n + '">'; }
   function gameHtml(v, ph) {
     var g = v.game || {}, me = v.side, h = '';
@@ -322,12 +326,19 @@
     if (v.mode === 'rps') {
       var my = g[me === 0 ? 'pa' : 'pb'], op = g[me === 0 ? 'pb' : 'pa'], sm = g[me === 0 ? 'sa' : 'sb'] || 0, so = g[me === 0 ? 'sb' : 'sa'] || 0;
       var lastRound = (g.round || 1) - 1, key = v.id + ':' + lastRound;
-      var clash = !!g.last && D.rpsAnim !== key && (my < 0 && op !== -2);
-      if (clash) D.rpsAnim = key;
-      h += '<div class="rbar"><div class="rside"><img src="' + meS + '" alt=""><b>Du</b><div class="rstars">' + stars(sm) + '</div></div>' +
-        '<div class="rmid num"><b>' + sm + ' : ' + so + '</b><small>Runde ' + Math.min(g.round || 1, 99) + '</small><small>Wer zuerst 3 hat, gewinnt!</small></div>' +
-        '<div class="rside op"><img src="' + opS + '" alt=""><b>' + esc(v.opp) + '</b><div class="rstars">' + stars(so) + '</div></div></div>';
-      var showLast = !!g.last && my < 0 && op !== -2;
+      var clash = !!g.last && D.rpsAnim !== key && my < 0;
+      if (clash) {
+        D.rpsAnim = key; D.rpsAt = Date.now();
+        if (ph !== 'end') setTimeout(function () { var gg = $('#duGame'); if (gg && D.rpsAnim === key) { gg.dataset.ver = ''; render(); } }, 2500);
+      }
+      // während der Animation zählt der neue Punkt erst, wenn beide Zeichen enthüllt sind
+      var gm = clash && g.last.w === me, go = clash && g.last.w !== me && g.last.w !== 2;
+      var score = (gm || go) ? '<b class="rsc"><span class="sold">' + (sm - (gm ? 1 : 0)) + ' : ' + (so - (go ? 1 : 0)) + '</span><span class="snew">' + sm + ' : ' + so + '</span></b>' : '<b>' + sm + ' : ' + so + '</b>';
+      h += '<div class="rbar"><div class="rside"><img src="' + meS + '" alt=""><b>Du</b><div class="rstars">' + stars(sm, gm) + '</div></div>' +
+        '<div class="rmid num">' + score + '<small>Runde ' + Math.min(g.round || 1, 99) + '</small><small>Wer zuerst 3 hat, gewinnt!</small></div>' +
+        '<div class="rside op"><img src="' + opS + '" alt=""><b>' + esc(v.opp) + '</b><div class="rstars">' + stars(so, go) + '</div></div></div>';
+      // nach der Animation ist die Kampfkarte wieder leer (Auswahl-Symbol)
+      var showLast = !!g.last && (ph === 'end' || (my < 0 && D.rpsAnim === key && Date.now() - (D.rpsAt || 0) < 2400));
       h += '<div class="rarena' + (clash ? ' clash' : '') + '">';
       if (showLast) {
         var lm = g.last[me === 0 ? 'a' : 'b'], lo = g.last[me === 0 ? 'b' : 'a'], w = g.last.w, res = w === 2 ? 'tie' : w === me ? 'won' : 'lost';
