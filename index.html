@@ -103,6 +103,31 @@ body.visiting .hud,body.visiting .nav,body.visiting #merchant,body.visiting .mod
 .vheart.on{background:linear-gradient(#ffd0e1,#ff9cc0);animation:none}
 @keyframes vbeat{50%{transform:translateX(-50%) scale(1.06)}}
 .brow.canvisit{cursor:pointer}
+.hchip.clubchip{position:relative;border:3px solid var(--out)!important;box-shadow:0 3px 0 var(--out)!important;font-family:var(--display);font-weight:400;font-size:14px;color:#fff;text-shadow:var(--ts-s);background:linear-gradient(#c9a2ff,#7b45d6)}
+/* Clubs */
+.crest{display:block;flex:none;filter:drop-shadow(0 2px 0 rgba(0,0,0,.18))}
+.crest text{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.crest.big{filter:drop-shadow(0 4px 0 rgba(0,0,0,.2)) drop-shadow(0 0 10px rgba(255,220,120,.6))}
+.chead{display:flex;align-items:center;gap:14px;background:linear-gradient(#fff,#f1e8ff)}
+.chead .crest{animation:bob 2.4s ease-in-out infinite}
+.cht{flex:1;min-width:0}.cht small{font-weight:800;color:var(--muted)}.cht h2{margin:0 0 6px;font-size:24px;color:#7b45d6;text-shadow:0 1px 0 #fff;overflow-wrap:anywhere}
+.cnew{display:flex;gap:12px;align-items:flex-start}.cbig{font-size:42px}
+.cmem .li.me{background:#fff3d6}.cav{font-size:24px;width:34px;text-align:center;flex:none}
+.btn.sm{padding:6px 10px;font-size:13px;flex:none}
+.btn.wide{width:100%}
+.clist .cbtn{border:0;background:none;padding:0}
+.cedit h4{margin:10px 0 4px;font-size:14px;color:var(--muted)}
+.cprev{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px;border-radius:16px;background:radial-gradient(circle,#fff6d6,#f1e8ff)}
+.cpn{font-family:var(--display);font-size:20px;color:#7b45d6;text-shadow:0 1px 0 #fff;overflow-wrap:anywhere;text-align:center}
+.cpick{display:flex;flex-wrap:wrap;gap:6px}
+.cpick button{border:2.5px solid var(--out);border-radius:12px;background:#fff;box-shadow:0 2px 0 var(--out);padding:3px;display:grid;place-items:center}
+.cpick button.on{outline:3px solid #ffc21a;outline-offset:1px;transform:translateY(1px);box-shadow:none;background:#fff3d6}
+.cpick.syms button{width:40px;height:40px;font-size:22px}
+.cpick.cols button{width:32px;height:32px;border-radius:50%}
+.cpeek{align-items:center;text-align:center}.cpeek .list{width:100%;text-align:left;max-height:40vh;overflow:auto}
+.ctag{display:flex;align-items:center;gap:3px;font-size:11px;color:#7b45d6;font-weight:900;overflow:hidden;text-overflow:ellipsis}
+.brow .cmn{margin-left:6px}
+.pod .crest{margin-bottom:2px}
 .brow .vis{opacity:.7}
 .chips{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .chip-row{display:flex;gap:6px}
@@ -413,7 +438,7 @@ button.tile:active{transform:translateY(2px);box-shadow:0 1px 0 var(--out)}
 .sheet[data-kind="board"] .box{width:min(460px,100%);max-height:min(640px,calc(100vh - 40px));animation:pin .28s cubic-bezier(.2,1.5,.4,1)}
 .sheet[data-kind="board"] .bd{background:linear-gradient(#fff6d6,#fffdf7 160px)}
 .sheet[data-kind="board"] .hd h2{text-align:center}
-.btabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.btabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
 .btabs button{border:2.5px solid var(--out);border-radius:14px;background:#fff;box-shadow:0 3px 0 var(--out);padding:6px 4px;font-family:var(--display);font-size:14px;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:2px}
 .btabs button img{width:26px;height:26px}
 .btabs button.on{background:linear-gradient(#ffe066,#ffc21a);color:#fff;text-shadow:var(--ts-s);transform:translateY(2px);box-shadow:0 1px 0 var(--out)}
@@ -766,6 +791,7 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
     <div class="lchips">
       <button class="hchip questchip" data-act="sheet:quests" aria-label="Aufgaben">📜 Aufgaben<i class="dot" id="dotQuest" hidden></i></button>
       <button class="hchip visitchip" data-act="sheet:besuch" aria-label="Farmen besuchen">🏡 Besuchen</button>
+      <button class="hchip clubchip" data-act="sheet:club" aria-label="Clubs">🛡️ Club</button>
     </div>
   </div>
   <div class="sp"></div>
@@ -825,6 +851,7 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 <script src="js/duel.js"></script>
 <script src="js/quest.js"></script>
 <script src="js/visit.js"></script>
+<script src="js/club.js"></script>
 <!--APP-END-->
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

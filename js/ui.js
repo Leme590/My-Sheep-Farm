@@ -515,7 +515,8 @@
     boardData = null; boardErr = '';
     saveCloud();
     setTimeout(function () {
-      N.board(boardTab).then(function (rows) { boardData = rows; }).catch(function (e) { boardErr = N.errText(e); })
+      (boardTab === 'clubs' ? N.club.board().then(function (rows) { return rows.map(function (r) { return { username: r.name, value: r.income, members: r.members, crest: r.crest, isClub: 1 }; }); }) : N.board(boardTab))
+        .then(function (rows) { boardData = rows; }).catch(function (e) { boardErr = N.errText(e); })
         .then(function () { if (sheet && sheet.name === 'board') renderSheet(); });
     }, 400);
   }
@@ -654,8 +655,9 @@
       .then(function () { busy = false; renderSheet(); });
   }
 
-  var BTABS = [['income', 'Geld/Sek.', 'coin'], ['playtime', 'Spielzeit', 'sonne'], ['rebirths', 'Rebirths', 'pokal']];
-  function boardVal(v) { return boardTab === 'income' ? fmt(v) + '/Sek.' : boardTab === 'playtime' ? G.fmtTime(v) : v + ' Rebirth' + (v == 1 ? '' : 's'); }
+  var BTABS = [['income', 'Geld/Sek.', 'coin'], ['playtime', 'Spielzeit', 'sonne'], ['duels', 'Duell-Siege', 'pokal'], ['clubs', 'Clubs', 'schild']];
+  function boardVal(v) { return boardTab === 'income' || boardTab === 'clubs' ? fmt(v) + '/Sek.' : boardTab === 'playtime' ? G.fmtTime(v) : v + (v == 1 ? ' Sieg' : ' Siege'); }
+  function clubTag(r) { return r.club && SI.club ? '<span class="ctag">' + SI.club.crest(r.crest, 16) + esc(r.club) + '</span>' : ''; }
   function avatar(name) { var pool = SI.TYPES.filter(function (t) { return t.r !== 's'; }); return A.sheepURL(pool[A.hash(name.toLowerCase()) % pool.length]); }
   VIEWS.board = function () {
     var h = '<div class="btabs">' + BTABS.map(function (x) {
@@ -665,22 +667,25 @@
     else if (!boardData) h += '<p class="hint center">Lädt …</p>';
     else if (!boardData.length) h += '<p class="hint center">Noch niemand drin. Spiel ein bisschen, dann erscheinst du hier!</p>';
     else {
-      var isMe = function (r) { return me && r.username.toLowerCase() === me.username.toLowerCase(); };
+      var clubs = boardTab === 'clubs', myClub = G.S.club && G.S.club.name;
+      var isMe = function (r) { return clubs ? !!myClub && r.username === myClub : me && r.username.toLowerCase() === me.username.toLowerCase(); };
+      var pic = function (r, sz) { return clubs && SI.club ? SI.club.crest(r.crest, sz || 40) : '<img src="' + avatar(r.username) + '" alt="">'; };
       // Siegertreppchen: 2. links, 1. Mitte, 3. rechts
       h += '<div class="podium">' + [1, 0, 2].map(function (i) {
         var r = boardData[i]; if (!r) return '<div class="pod empty"></div>';
         return '<div class="pod p' + (i + 1) + (isMe(r) ? ' me' : '') + '">' + (i === 0 ? '<span class="crown">👑</span>' : '') +
-          '<img src="' + avatar(r.username) + '" alt=""><b class="pn">' + esc(r.username) + '</b><span class="pv num">' + boardVal(r.value) + '</span>' +
+          pic(r, 54) + '<b class="pn">' + esc(r.username) + '</b><span class="pv num">' + boardVal(r.value) + '</span>' +
           '<div class="step"><span>' + (i + 1) + '</span></div></div>';
       }).join('') + '</div>';
       // Tabelle mit allen Spielern und ihren Plätzen (Kai)
-      h += '<h3 class="btitle">Alle Spieler</h3><div class="board"><div class="brow bhead"><span class="pl">#</span><span></span><span class="nm">Spieler</span><b>' + BTABS.filter(function (x) { return x[0] === boardTab; })[0][1] + '</b></div>' +
+      h += '<h3 class="btitle">' + (clubs ? 'Alle Clubs' : 'Alle Spieler') + '</h3><div class="board"><div class="brow bhead"><span class="pl">#</span><span></span><span class="nm">' + (clubs ? 'Club' : 'Spieler') + '</span><b>' + (clubs ? 'Geld/Sek.' : BTABS.filter(function (x) { return x[0] === boardTab; })[0][1]) + '</b></div>' +
         boardData.map(function (r, k) {
-          return '<div class="brow' + (k < 3 ? ' top' + (k + 1) : '') + (isMe(r) ? ' me' : ' canvisit') + '"' + (isMe(r) ? '' : ' data-act="visit:' + esc(r.username) + '"') + '><span class="pl">' + (k + 1) + '</span><img src="' + avatar(r.username) + '" alt=""><span class="nm">' + esc(r.username) + (isMe(r) ? ' <small>(du)</small>' : ' <small class="vis">🏡</small>') + '</span><b class="num">' + boardVal(r.value) + '</b></div>';
+          if (clubs) return '<div class="brow' + (k < 3 ? ' top' + (k + 1) : '') + (isMe(r) ? ' me' : '') + '"><span class="pl">' + (k + 1) + '</span>' + pic(r, 30) + '<span class="nm">' + esc(r.username) + (isMe(r) ? ' <small>(dein Club)</small>' : '') + '<small class="cmn">👥 ' + r.members + '</small></span><b class="num">' + boardVal(r.value) + '</b></div>';
+          return '<div class="brow' + (k < 3 ? ' top' + (k + 1) : '') + (isMe(r) ? ' me' : ' canvisit') + '"' + (isMe(r) ? '' : ' data-act="visit:' + esc(r.username) + '"') + '><span class="pl">' + (k + 1) + '</span><img src="' + avatar(r.username) + '" alt=""><span class="nm">' + esc(r.username) + (isMe(r) ? ' <small>(du)</small>' : ' <small class="vis">🏡</small>') + clubTag(r) + '</span><b class="num">' + boardVal(r.value) + '</b></div>';
         }).join('') + '</div>';
       var mine = -1; boardData.forEach(function (r, i) { if (isMe(r)) mine = i; });
-      h += '<p class="hint center">Tippe auf einen Spieler, um seine Farm zu besuchen.</p>';
-      h += '<div class="myrank">' + (mine >= 0 ? 'Du bist auf <b>Platz ' + (mine + 1) + '</b>!' : 'Du bist noch nicht in den Top ' + boardData.length + '. Weiter so!') + '</div>';
+      h += '<p class="hint center">' + (clubs ? 'Hier wird das Geld pro Sekunde von allen Mitgliedern eines Clubs zusammengezählt.' : 'Tippe auf einen Spieler, um seine Farm zu besuchen.') + '</p>';
+      h += '<div class="myrank">' + (clubs ? (mine >= 0 ? 'Dein Club ist auf <b>Platz ' + (mine + 1) + '</b>!' : myClub ? 'Dein Club ist noch nicht dabei.' : 'Du bist in keinem Club. Tritt einem bei!') : mine >= 0 ? 'Du bist auf <b>Platz ' + (mine + 1) + '</b>!' : 'Du bist noch nicht in den Top ' + boardData.length + '. Weiter so!') + '</div>';
     }
     if (!N.online) h += '<p class="hint center">Test-Modus: Hier stehen nur Accounts von diesem Gerät.</p>';
     return { title: 'Bestenliste', html: h };

@@ -18,6 +18,12 @@
     code_format: 'Ein Code darf 3 bis 32 Zeichen haben: Buchstaben, Zahlen, - und _.',
     not_admin: 'Dafür brauchst du Admin-Rechte.',
     no_player: 'Diesen Spieler gibt es nicht.',
+    club_already: 'Du bist schon in einem Club. Verlass ihn zuerst.',
+    club_name: 'Der Club-Name braucht 3 bis 20 Zeichen: Buchstaben, Zahlen, Leerzeichen, - und _.',
+    club_taken: 'Diesen Club-Namen gibt es schon. Such dir einen anderen aus.',
+    club_full: 'Dieser Club ist voll (15 Mitglieder).',
+    club_gone: 'Diesen Club gibt es nicht mehr.',
+    club_not_owner: 'Nur der Chef vom Club darf das Wappen ändern.',
     heart_self: 'Deiner eigenen Farm kannst du kein Herz geben.',
     heart_done: 'Dieser Farm hast du heute schon ein Herz gegeben.',
     bad_amount: 'Bitte gib einen gültigen Betrag ein.',
@@ -142,8 +148,12 @@
         .sort(function (x, y) { return y.created_at - x.created_at; }).slice(0, 30));
     },
     board: function (kind) {
-      var a = LOCAL.all();
-      var rows = Object.keys(a).map(function (k) { return { username: a[k].username, value: a[k][kind] || 0 }; });
+      var a = LOCAL.all(), cl = LC.all();
+      var rows = Object.keys(a).map(function (k) {
+        var acc = a[k], c = acc.club && cl[acc.club];
+        var v = kind === 'duels' ? ((acc.save && acc.save.stats && acc.save.stats.duelWins) || 0) : acc[kind] || 0;
+        return { username: acc.username, value: v, club: c ? c.name : null, crest: c ? c.crest : null };
+      });
       rows.sort(function (x, y) { return y.value - x.value; });
       return Promise.resolve(rows.slice(0, 500));
     }
@@ -454,6 +464,90 @@
   N.farm = {
     visit: function (tok, name) { return ONLINE ? rpc('sp_farm_visit', { p_token: tok, p_name: String(name || '').trim() }) : LF.visit(tok, name); },
     heart: function (tok, name) { return ONLINE ? rpc('sp_farm_heart', { p_token: tok, p_name: String(name || '').trim() }) : LF.heart(tok, name); }
+  };
+
+  /* ---------- Clubs ---------- */
+  function crestOk(c) { c = c || {}; var f = function (v, mx) { v = parseInt(v, 10); return isNaN(v) ? 0 : Math.max(0, Math.min(mx, v)); }; return { sh: f(c.sh, 5), bg: f(c.bg, 15), fg: f(c.fg, 15), sy: f(c.sy, 23) }; }
+  // Test-Modus: Clubs nur auf diesem Gerät. Die „Schafbot-Bande“ ist zum Ausprobieren immer da.
+  var LC = {
+    all: function () {
+      var c = lsGet('schaf_clubs', null);
+      if (!c) { c = { bot: { id: 'bot', name: 'Schafbot-Bande', crest: { sh: 0, bg: 8, fg: 1, sy: 1 }, owner: 'schafbot', bot: true, made: 1 } }; lsSet('schaf_clubs', c); }
+      return c;
+    },
+    put: function (c) { lsSet('schaf_clubs', c); },
+    me: function (tok) { var f = LOCAL.find(tok); if (!f) throw new Error('bad_token'); return f; },
+    members: function (id, a) {
+      a = a || LOCAL.all(); var c = LC.all()[id], m = [];
+      Object.keys(a).forEach(function (k) { if (a[k].club === id) m.push({ username: a[k].username, income: a[k].income || 0, wins: (a[k].save && a[k].save.stats && a[k].save.stats.duelWins) || 0, owner: c && c.owner === k }); });
+      if (c && c.bot) m.push({ username: N.BOT, income: 1500, wins: 7, owner: c.owner === 'schafbot' });
+      return m.sort(function (x, y) { return y.income - x.income; });
+    },
+    view: function (id, meK) {
+      var c = LC.all()[id]; if (!c) return null;
+      var a = LOCAL.all(), mem = LC.members(id, a), ow = c.owner === 'schafbot' ? N.BOT : a[c.owner] ? a[c.owner].username : '';
+      return { id: id, name: c.name, crest: c.crest, owner: ow, mine: !!(a[meK] && a[meK].club === id), members: mem };
+    },
+    rows: function () {
+      var cl = LC.all();
+      return Object.keys(cl).map(function (id) {
+        var m = LC.members(id); var inc = 0, w = 0; m.forEach(function (x) { inc += x.income; w += x.wins; });
+        return { id: id, name: cl[id].name, crest: cl[id].crest, members: m.length, income: inc, wins: w };
+      }).filter(function (r) { return r.members > 0; }).sort(function (x, y) { return y.income - x.income; });
+    },
+    run: function (tok, fn) { try { return Promise.resolve(fn(LC.me(tok))); } catch (e) { return Promise.reject(e); } }
+  };
+  var LCL = {
+    list: function (tok, q) { return LC.run(tok, function () { q = String(q || '').toLowerCase(); return LC.rows().filter(function (r) { return !q || r.name.toLowerCase().indexOf(q) >= 0; }).slice(0, 50); }); },
+    mine: function (tok) { return LC.run(tok, function (f) { var id = f.a[f.k].club; return id && LC.all()[id] ? LC.view(id, f.k) : null; }); },
+    info: function (tok, id) { return LC.run(tok, function (f) { var v = LC.view(id, f.k); if (!v) throw new Error('club_gone'); return v; }); },
+    create: function (tok, name, crest) {
+      return LC.run(tok, function (f) {
+        if (f.a[f.k].club && LC.all()[f.a[f.k].club]) throw new Error('club_already');
+        var nm = String(name || '').trim().replace(/\s+/g, ' ');
+        if (!/^[A-Za-z0-9ÄÖÜäöüß _-]{3,20}$/.test(nm)) throw new Error('club_name');
+        var cl = LC.all(); Object.keys(cl).forEach(function (id) { if (cl[id].name.toLowerCase() === nm.toLowerCase()) throw new Error('club_taken'); });
+        var id = uid(); cl[id] = { id: id, name: nm, crest: crestOk(crest), owner: f.k, made: Date.now() }; LC.put(cl);
+        var a = LOCAL.all(); a[f.k].club = id; LOCAL.put(a); return LC.view(id, f.k);
+      });
+    },
+    join: function (tok, id) {
+      return LC.run(tok, function (f) {
+        if (f.a[f.k].club && LC.all()[f.a[f.k].club]) throw new Error('club_already');
+        if (!LC.all()[id]) throw new Error('club_gone');
+        if (LC.members(id).length >= 15) throw new Error('club_full');
+        var a = LOCAL.all(); a[f.k].club = id; LOCAL.put(a); return LC.view(id, f.k);
+      });
+    },
+    leave: function (tok) {
+      return LC.run(tok, function (f) {
+        var a = LOCAL.all(), id = a[f.k].club; if (!id) return true;
+        delete a[f.k].club; LOCAL.put(a);
+        var cl = LC.all(), c = cl[id]; if (!c) return true;
+        var m = LC.members(id, a);
+        if (!m.length) delete cl[id]; // niemand mehr drin: Club wird gelöscht
+        else if (c.owner === f.k) { var best = m.filter(function (x) { return x.username !== N.BOT; })[0]; c.owner = best ? best.username.toLowerCase() : 'schafbot'; }
+        LC.put(cl); return true;
+      });
+    },
+    crest: function (tok, crest) {
+      return LC.run(tok, function (f) {
+        var id = f.a[f.k].club, cl = LC.all(), c = cl[id];
+        if (!c || c.owner !== f.k) throw new Error('club_not_owner');
+        c.crest = crestOk(crest); LC.put(cl); return LC.view(id, f.k);
+      });
+    },
+    board: function () { return Promise.resolve(LC.rows().slice(0, 200)); }
+  };
+  N.club = {
+    list: function (tok, q) { return ONLINE ? rpc('sp_club_list', { p_token: tok, p_search: q || '' }).then(function (r) { return r || []; }) : LCL.list(tok, q); },
+    mine: function (tok) { return ONLINE ? rpc('sp_club_mine', { p_token: tok }) : LCL.mine(tok); },
+    info: function (tok, id) { return ONLINE ? rpc('sp_club_info', { p_token: tok, p_id: id }) : LCL.info(tok, id); },
+    create: function (tok, name, crest) { return ONLINE ? rpc('sp_club_create', { p_token: tok, p_name: name, p_crest: crestOk(crest) }) : LCL.create(tok, name, crest); },
+    join: function (tok, id) { return ONLINE ? rpc('sp_club_join', { p_token: tok, p_id: id }) : LCL.join(tok, id); },
+    leave: function (tok) { return ONLINE ? rpc('sp_club_leave', { p_token: tok }) : LCL.leave(tok); },
+    crest: function (tok, crest) { return ONLINE ? rpc('sp_club_crest', { p_token: tok, p_crest: crestOk(crest) }) : LCL.crest(tok, crest); },
+    board: function () { return ONLINE ? rpc('sp_club_board', {}).then(function (r) { return r || []; }) : LCL.board(); }
   };
 
   N.session = function () { return lsGet('schaf_session', null); };

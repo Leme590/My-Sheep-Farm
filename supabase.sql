@@ -68,20 +68,10 @@ begin
   return true;
 end $$;
 
-create or replace function public.sp_leaderboard(p_kind text)
-returns table (username text, value double precision) language sql security definer set search_path = public as $$
-  select p.username,
-    case p_kind when 'playtime' then p.playtime::double precision when 'rebirths' then p.rebirths::double precision else p.income end as value
-  from players p
-  order by value desc, p.created_at asc
-  limit 500;
-$$;
-
 grant execute on function public.sp_register(text, text) to anon;
 grant execute on function public.sp_login(text, text) to anon;
 grant execute on function public.sp_load(uuid) to anon;
 grant execute on function public.sp_save(uuid, jsonb, double precision, bigint, integer) to anon;
-grant execute on function public.sp_leaderboard(text) to anon;
 
 -- ===================== Codes und Admin (Teil 2) =====================
 -- Kann auch nachträglich ausgeführt werden: einfach diese ganze Datei nochmal "Run".
@@ -635,3 +625,169 @@ end $$;
 
 grant execute on function public.sp_farm_visit(uuid, text) to anon;
 grant execute on function public.sp_farm_heart(uuid, text) to anon;
+
+-- ===================== Clubs und neue Ranglisten (Teil 5) =====================
+-- Kann auch nachträglich ausgeführt werden: einfach diese ganze Datei nochmal "Run".
+create table if not exists public.clubs (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null,
+  crest       jsonb not null default '{}'::jsonb,
+  owner       uuid references public.players(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+create unique index if not exists clubs_name_lower on public.clubs (lower(name));
+alter table public.clubs enable row level security;
+revoke all on public.clubs from anon, authenticated;
+alter table public.players add column if not exists club uuid references public.clubs(id) on delete set null;
+create index if not exists players_club on public.players (club);
+
+-- gewonnene Duelle eines Spielers (direkt aus den Duellen gezählt, kann man nicht schummeln)
+create or replace function public.duel_wins(p_id uuid)
+returns bigint language sql stable security definer set search_path = public as $$
+  select count(*) from duels d where d.state = 'done' and ((d.a = p_id and d.winner = 0) or (d.b = p_id and d.winner = 1));
+$$;
+
+-- Wappen prüfen: nur Zahlen in erlaubten Bereichen
+create or replace function public.club_crest(c jsonb)
+returns jsonb language plpgsql immutable as $$
+declare sh int; bg int; fg int; sy int;
+begin
+  sh := least(greatest(coalesce((c->>'sh')::int, 0), 0), 5);
+  bg := least(greatest(coalesce((c->>'bg')::int, 0), 0), 15);
+  fg := least(greatest(coalesce((c->>'fg')::int, 0), 0), 15);
+  sy := least(greatest(coalesce((c->>'sy')::int, 0), 0), 23);
+  return jsonb_build_object('sh', sh, 'bg', bg, 'fg', fg, 'sy', sy);
+exception when others then
+  return '{"sh":0,"bg":0,"fg":1,"sy":0}'::jsonb;
+end $$;
+
+drop function if exists public.sp_leaderboard(text);
+create or replace function public.sp_leaderboard(p_kind text)
+returns table (username text, value double precision, club text, crest jsonb) language sql security definer set search_path = public as $$
+  select x.username, x.value, c.name, c.crest from (
+    select p.username, p.club, p.created_at,
+      case p_kind when 'playtime' then p.playtime::double precision
+                  when 'rebirths' then p.rebirths::double precision
+                  when 'duels' then duel_wins(p.id)::double precision
+                  else p.income end as value
+    from players p) x
+  left join clubs c on c.id = x.club
+  order by x.value desc, x.created_at asc
+  limit 500;
+$$;
+
+-- Club-Rangliste: Geld pro Sekunde von allen Mitgliedern zusammen
+create or replace function public.sp_club_board()
+returns table (id uuid, name text, crest jsonb, members bigint, income double precision, wins bigint) language sql security definer set search_path = public as $$
+  select c.id, c.name, c.crest, count(p.id), coalesce(sum(p.income), 0), coalesce(sum(duel_wins(p.id)), 0)::bigint
+  from clubs c join players p on p.club = c.id
+  group by c.id
+  order by 5 desc, c.created_at asc
+  limit 200;
+$$;
+
+create or replace function public.club_view(p_club uuid, p_me uuid)
+returns json language sql security definer set search_path = public as $$
+  select json_build_object('id', c.id, 'name', c.name, 'crest', c.crest, 'owner', o.username, 'mine', exists (select 1 from players m where m.id = p_me and m.club = c.id),
+    'members', coalesce((select json_agg(json_build_object('username', p.username, 'income', p.income, 'wins', duel_wins(p.id), 'owner', p.id = c.owner) order by p.income desc)
+                         from players p where p.club = c.id), '[]'::json))
+  from clubs c left join players o on o.id = c.owner where c.id = p_club;
+$$;
+
+-- Clubs suchen (oder die besten zeigen)
+create or replace function public.sp_club_list(p_token uuid, p_search text)
+returns table (id uuid, name text, crest jsonb, members bigint, income double precision) language plpgsql security definer set search_path = public as $$
+begin
+  perform duel_me(p_token);
+  return query select c.id, c.name, c.crest, count(p.id), coalesce(sum(p.income), 0)
+    from clubs c join players p on p.club = c.id
+    where coalesce(p_search, '') = '' or c.name ilike '%' || replace(replace(p_search, '%', ''), '_', '\_') || '%'
+    group by c.id order by 5 desc limit 50;
+end $$;
+
+create or replace function public.sp_club_mine(p_token uuid)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players;
+begin
+  me := duel_me(p_token);
+  if me.club is null then return null; end if;
+  return club_view(me.club, me.id);
+end $$;
+
+create or replace function public.sp_club_info(p_token uuid, p_id uuid)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players; v json;
+begin
+  me := duel_me(p_token);
+  v := club_view(p_id, me.id);
+  if v is null then raise exception 'club_gone'; end if;
+  return v;
+end $$;
+
+create or replace function public.sp_club_create(p_token uuid, p_name text, p_crest jsonb)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players; nm text; cid uuid;
+begin
+  me := duel_me(p_token);
+  if me.club is not null then raise exception 'club_already'; end if;
+  nm := regexp_replace(trim(coalesce(p_name, '')), '\s+', ' ', 'g');
+  if nm !~ '^[A-Za-z0-9ÄÖÜäöüß _-]{3,20}$' then raise exception 'club_name'; end if;
+  if exists (select 1 from clubs where lower(name) = lower(nm)) then raise exception 'club_taken'; end if;
+  insert into clubs (name, crest, owner) values (nm, club_crest(p_crest), me.id) returning id into cid;
+  update players set club = cid where id = me.id;
+  return club_view(cid, me.id);
+end $$;
+
+create or replace function public.sp_club_join(p_token uuid, p_id uuid)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players; n int;
+begin
+  me := duel_me(p_token);
+  if me.club is not null then raise exception 'club_already'; end if;
+  perform 1 from clubs where id = p_id for update;
+  if not found then raise exception 'club_gone'; end if;
+  select count(*) into n from players where club = p_id;
+  if n >= 15 then raise exception 'club_full'; end if;
+  update players set club = p_id where id = me.id;
+  return club_view(p_id, me.id);
+end $$;
+
+create or replace function public.sp_club_leave(p_token uuid)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare me players; cid uuid;
+begin
+  me := duel_me(p_token);
+  cid := me.club;
+  if cid is null then return true; end if;
+  perform 1 from clubs where id = cid for update;
+  update players set club = null where id = me.id;
+  if not exists (select 1 from players where club = cid) then
+    delete from clubs where id = cid;                      -- niemand mehr drin: Club wird gelöscht
+  else
+    update clubs set owner = (select p.id from players p where p.club = cid order by p.income desc limit 1)
+      where id = cid and (owner is null or owner = me.id); -- neuer Chef: das reichste Mitglied
+  end if;
+  return true;
+end $$;
+
+-- Nur der Chef darf das Wappen ändern
+create or replace function public.sp_club_crest(p_token uuid, p_crest jsonb)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players;
+begin
+  me := duel_me(p_token);
+  update clubs set crest = club_crest(p_crest) where id = me.club and owner = me.id;
+  if not found then raise exception 'club_not_owner'; end if;
+  return club_view(me.club, me.id);
+end $$;
+
+revoke execute on function public.duel_wins(uuid), public.club_view(uuid, uuid) from public, anon, authenticated;
+grant execute on function public.sp_leaderboard(text) to anon;
+grant execute on function public.sp_club_board() to anon;
+grant execute on function public.sp_club_list(uuid, text) to anon;
+grant execute on function public.sp_club_mine(uuid) to anon;
+grant execute on function public.sp_club_info(uuid, uuid) to anon;
+grant execute on function public.sp_club_create(uuid, text, jsonb) to anon;
+grant execute on function public.sp_club_join(uuid, uuid) to anon;
+grant execute on function public.sp_club_leave(uuid) to anon;
+grant execute on function public.sp_club_crest(uuid, jsonb) to anon;
