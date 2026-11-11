@@ -95,7 +95,7 @@ window.SI = window.SI || {};
   SI.BK.nacho = SI.NACHO;
   // Turnier-Kiste: gibt es nur als Belohnung beim Schafrennen-Cup (Kai).
   // 3 zufällige Belohnungen. Schafe wie die drittbeste Kiste, Deko wie die zweitbeste Deko-Kiste (legendär).
-  SI.BK.turnier = { k: 'turnier', n: 'Turnier-Kiste', cost: 0, odds: SI.BK.regen.odds, card: 0, col: '#ffc21a' };
+  SI.BK.turnier = { k: 'turnier', n: 'Turnier-Kiste', cost: 0, odds: SI.BK.kristall.odds, card: 0, col: '#ffc21a' };
   SI.TURNIER = { n: 3, w: { sheep: 45, deko: 30, coins: 25 }, deko: 'l', coinMin: [20, 60] };
   // Exklusive Cup-Deko: jede Woche eine andere (Start: Freitag 13.11.2026)
   SI.CUP_DEKO = ['cupPokal', 'cupFlagge', 'cupBogen', 'cupPodest', 'cupStatue', 'cupAmpel', 'cupLorbeer', 'cupKanone', 'cupHufeisen', 'cupMedaille'];
