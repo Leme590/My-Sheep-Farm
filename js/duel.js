@@ -5,7 +5,7 @@
   var $ = function (s) { return document.querySelector(s); };
   var esc = U.esc, fmt = G.fmt, SFX = U.SFX;
   var MODES = {
-    rps: { n: 'Schere Stein Papier', ic: '✌️', d: 'Wer zuerst 2 Runden gewinnt' },
+    rps: { n: 'Schere Stein Papier', ic: '✌️', d: 'Wer zuerst 3 Runden gewinnt' },
     ttt: { n: 'Tic Tac Toe', ic: '⭕', d: 'Drei in einer Reihe' },
     c4: { n: 'Vier gewinnt', ic: '🔴', d: 'Vier in einer Reihe' }
   };
@@ -74,7 +74,7 @@
     if (v && v.state === 'play') escrow(v);
     if (v && (v.state === 'setup' || v.state === 'play')) {
       if (!was || was.id !== v.id || was.state === 'invite') { U.closeSheet(); SFX('trumpet'); }
-      if (D.draftFor !== v.id) { D.draftFor = v.id; D.draft = JSON.parse(JSON.stringify(v.my_stake || { money: 0, sheep: {} })); }
+      if (D.draftFor !== v.id) { D.avatar = mySheep(); D.draftFor = v.id; D.draft = JSON.parse(JSON.stringify(v.my_stake || { money: 0, sheep: {} })); }
       D.final = null; D.shownId = v.id;
       render();
     } else if (!D.final) hide();
@@ -257,12 +257,16 @@
     } else {
       var info = D.finalInfo || {};
       var title = v.state === 'gone' ? 'Kein Duell' : info.win === 'me' ? 'Gewonnen!' : info.win === 'opp' ? 'Verloren' : 'Unentschieden';
-      h += '<div class="duend ' + (info.win || 'none') + '"><div class="dubig">' + (info.win === 'me' ? '🏆' : info.win === 'opp' ? '😢' : '🤝') + '</div><h2>' + title + '</h2>' +
+      var rpsEnd = v.game && v.mode === 'rps';
+      if (rpsEnd) h += '<div class="dugame" id="duGame"></div>';
+      h += '<div class="duend ' + (info.win || 'none') + (rpsEnd ? ' late' : '') + '"><div class="dubig">' + (info.win === 'me' ? '🏆' : info.win === 'opp' ? '😢' : '🤝') + '</div><h2>' + title + '</h2>' +
         (info.why ? '<p>' + esc(info.why) + '</p>' : '') + resultLines(info) + '</div>';
       if (v.game && v.mode !== 'rps') h += '<div class="dugame small" id="duGame"></div>';
+      h += '<div class="' + (rpsEnd ? 'late' : '') + '">';
       h += '<div class="btns"><button class="btn coin" data-act="duDone">Fertig</button>' +
         (v.opp && v.opp !== '' ? '<button class="btn red" data-act="duAgain:' + esc(v.opp) + '">⚔️ Revanche</button>' : '') +
         '<button class="btn ghost" data-act="duFav:' + esc(v.opp) + '" id="duFavBtn">' + (isFav(v.opp) ? '★ Favorit' : '☆ Als Favorit') + '</button></div>';
+      h += '</div>';
     }
     el().innerHTML = h + '</div>';
     if (ph === 'setup') { var mi = $('#duMoney'); mi.value = moneyStr(D.draft && D.draft.money); }
@@ -302,43 +306,79 @@
     var myTurn = v.mode === 'rps' ? v.game && v.game[v.side === 0 ? 'pa' : 'pb'] < 0 : v.turn === v.side;
     t.textContent = (myTurn ? 'Noch ' + Math.ceil(l / 1000) + ' Sek. für deinen Zug' : esc(v.opp) + ' hat noch ' + Math.ceil(l / 1000) + ' Sek.');
   }
+  var TLINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+  var TLPOS = [[50, 16.7, 0, 92], [50, 50, 0, 92], [50, 83.3, 0, 92], [16.7, 50, 90, 92], [50, 50, 90, 92], [83.3, 50, 90, 92], [50, 50, 45, 124], [50, 50, -45, 124]];
+  function mySheep() {
+    var best = 'wiese', inc = -1;
+    Object.keys(G.S.sheep).forEach(function (t) { if (T[t] && G.S.sheep[t] > 0 && T[t].inc > inc) { inc = T[t].inc; best = t; } });
+    return T[best];
+  }
+  function stars(n) { var h = ''; for (var i = 0; i < 3; i++) h += '<i class="rstar' + (i < n ? ' on' : '') + '">★</i>'; return h; }
+  function rpsImg(i, cls) { return '<img class="' + (cls || '') + '" src="' + A.rpsURL(i) + '" alt="' + RPS[i].n + '">'; }
   function gameHtml(v, ph) {
     var g = v.game || {}, me = v.side, h = '';
     var playing = ph === 'play' && v.state === 'play';
+    var meS = A.sheepURL(D.avatar || mySheep()), opS = A.sheepURL(T.schwarz);
     if (v.mode === 'rps') {
       var my = g[me === 0 ? 'pa' : 'pb'], op = g[me === 0 ? 'pb' : 'pa'], sm = g[me === 0 ? 'sa' : 'sb'] || 0, so = g[me === 0 ? 'sb' : 'sa'] || 0;
-      h += '<div class="duscore num"><span>Du <b>' + sm + '</b></span><small>Runde ' + (g.round || 1) + ' · Wer zuerst 2 hat, gewinnt</small><span><b>' + so + '</b> ' + esc(v.opp) + '</span></div>';
-      if (g.last) {
-        var lm = g.last[me === 0 ? 'a' : 'b'], lo = g.last[me === 0 ? 'b' : 'a'], w = g.last.w;
-        h += '<div class="dulast"><span>' + RPS[lm].ic + '</span><small>' + (w === 2 ? 'Gleich!' : w === me ? 'Punkt für dich!' : 'Punkt für ' + esc(v.opp)) + '</small><span>' + RPS[lo].ic + '</span></div>';
+      var lastRound = (g.round || 1) - 1, key = v.id + ':' + lastRound;
+      var clash = !!g.last && D.rpsAnim !== key && (my < 0 && op !== -2);
+      if (clash) D.rpsAnim = key;
+      h += '<div class="rbar"><div class="rside"><img src="' + meS + '" alt=""><b>Du</b><div class="rstars">' + stars(sm) + '</div></div>' +
+        '<div class="rmid num"><b>' + sm + ' : ' + so + '</b><small>Runde ' + Math.min(g.round || 1, 99) + '</small><small>Wer zuerst 3 hat, gewinnt!</small></div>' +
+        '<div class="rside op"><img src="' + opS + '" alt=""><b>' + esc(v.opp) + '</b><div class="rstars">' + stars(so) + '</div></div></div>';
+      var showLast = !!g.last && my < 0 && op !== -2;
+      h += '<div class="rarena' + (clash ? ' clash' : '') + '">';
+      if (showLast) {
+        var lm = g.last[me === 0 ? 'a' : 'b'], lo = g.last[me === 0 ? 'b' : 'a'], w = g.last.w, res = w === 2 ? 'tie' : w === me ? 'won' : 'lost';
+        h += '<div class="rslot me ' + (res === 'won' ? 'win' : res === 'lost' ? 'lose' : '') + '">' + (clash ? rpsImg(1, 'pre') : '') + rpsImg(lm, 'real') + '<small>' + RPS[lm].n + '</small></div>' +
+          '<div class="rvs">VS</div>' +
+          '<div class="rslot op ' + (res === 'lost' ? 'win' : res === 'won' ? 'lose' : '') + '">' + (clash ? rpsImg(1, 'pre') : '') + rpsImg(lo, 'real') + '<small>' + RPS[lo].n + '</small></div>';
+        if (clash) h += '<div class="rchant"><span>Schere …</span><span>Stein …</span><span>Papier!</span></div>';
+        h += '<div class="rres ' + res + '">' + (res === 'tie' ? 'Gleich! Nochmal!' : res === 'won' ? '⭐ Punkt für dich!' : 'Punkt für ' + esc(v.opp)) + '</div>';
+      } else {
+        h += '<div class="rslot me">' + (my >= 0 ? rpsImg(my, 'real pick') : '<span class="rq">?</span>') + '<small>' + (my >= 0 ? RPS[my].n : 'Du') + '</small></div><div class="rvs">VS</div>' +
+          '<div class="rslot op">' + (op === -2 ? '<img class="real back" src="' + A.cardBackURL() + '" alt=""><small>✔ hat gewählt</small>' : '<span class="rq think">…</span><small>überlegt</small>') + '</div>';
       }
-      if (playing) {
-        if (my >= 0) h += '<p class="duturn">Du hast ' + RPS[my].ic + ' ' + RPS[my].n + ' gewählt. ' + (op === -2 ? esc(v.opp) + ' hat auch gewählt …' : 'Warte auf ' + esc(v.opp) + ' …') + '</p>';
-        else h += '<p class="duturn me">Wähle! ' + (op === -2 ? esc(v.opp) + ' hat schon gewählt.' : '') + '</p>';
-        h += '<div class="durps">' + RPS.map(function (r, i) { return '<button class="durpsb' + (my === i ? ' on' : '') + '" data-act="duMove:' + i + '"' + (my >= 0 ? ' disabled' : '') + '><span>' + r.ic + '</span>' + r.n + '</button>'; }).join('') + '</div>';
-      } else if (ph === 'cd') h += '<div class="durps">' + RPS.map(function (r) { return '<button class="durpsb" disabled><span>' + r.ic + '</span>' + r.n + '</button>'; }).join('') + '</div>';
+      h += '</div>';
+      if (ph === 'end') return h;
+      h += '<div class="rpick' + (clash ? ' late' : '') + '">';
+      if (playing && my >= 0) h += '<p class="duturn">Warte auf ' + esc(v.opp) + ' …</p>';
+      else if (playing) h += '<p class="duturn me">Wähle deine Waffe!</p>';
+      else h += '<p class="duturn">Gleich geht es los!</p>';
+      h += '<div class="durps">' + RPS.map(function (r, i) {
+        return '<button class="durpsb' + (my === i ? ' on' : '') + '" data-act="duMove:' + i + '"' + (playing && my < 0 ? '' : ' disabled') + '>' + rpsImg(i) + '<b>' + r.n + '</b></button>';
+      }).join('') + '</div></div>';
       return h;
     }
     var b = g.b || [], wl = g.wl || [], myT = playing && v.turn === me;
-    var sym = v.mode === 'ttt' ? ['✕', '◯'] : ['', ''];
     if (ph !== 'end') {
-      var you = v.mode === 'ttt' ? 'Du bist ' + sym[me] : 'Du bist <i class="disc d' + me + '"></i>';
-      h += '<p class="duturn' + (myT ? ' me' : '') + '">' + you + ' · ' + (ph === 'cd' ? 'Gleich geht es los!' : myT ? 'Du bist dran!' : esc(v.opp) + ' ist dran …') + '</p>';
-      if (g.drawn) h += '<p class="hint" style="text-align:center">Unentschieden! Nochmal, Runde ' + g.g + ' von 3.</p>';
+      var you = v.mode === 'ttt' ? '<img class="tico" src="' + A.sheepURL(T.wiese) + '" alt="">Du bist das weiße Schaf' : '<i class="disc mine"></i>Du bist Rot';
+      h += '<div class="dutop"><span class="duyou">' + you + '</span><span class="duturnpill' + (myT ? ' me' : '') + '">' + (ph === 'cd' ? 'Gleich geht es los!' : myT ? 'Du bist dran!' : esc(v.opp) + ' ist dran …') + '</span></div>';
+      if (g.drawn) h += '<p class="dudraw">Unentschieden! Nochmal, Runde ' + g.g + ' von 3.</p>';
     }
     if (v.mode === 'ttt') {
-      h += '<div class="duttt">' + b.map(function (x, i) {
-        return '<button class="ducell' + (wl.indexOf(i) >= 0 ? ' win' : '') + (g.lm === i ? ' last' : '') + (x >= 0 ? ' p' + x + (x === me ? ' mine' : ' theirs') : '') + '" data-act="duMove:' + i + '"' + (myT && x < 0 ? '' : ' disabled') + '>' + (x >= 0 ? sym[x] : '') + '</button>';
-      }).join('') + '</div>';
+      var li = -1;
+      if (wl.length === 3) TLINES.forEach(function (l, k) { if (l.join() === wl.join()) li = k; });
+      h += '<div class="duttt' + (myT ? ' myturn' : '') + '">' + b.map(function (x, i) {
+        var mineP = x === me;
+        return '<button class="ducell' + (wl.indexOf(i) >= 0 ? ' win' : '') + (g.lm === i ? ' last' : '') + (x >= 0 ? (mineP ? ' mine' : ' theirs') : '') + '" data-act="duMove:' + i + '"' + (myT && x < 0 ? '' : ' disabled') + '>' +
+          (x >= 0 ? '<img src="' + (mineP ? A.sheepURL(T.wiese) : A.sheepURL(T.schwarz)) + '" alt="">' : '') + '</button>';
+      }).join('');
+      if (li >= 0) { var tp = TLPOS[li]; h += '<i class="tline' + (wl.length && b[wl[0]] === me ? ' mine' : '') + '" style="left:' + tp[0] + '%;top:' + tp[1] + '%;width:' + tp[3] + '%;--a:' + tp[2] + 'deg"></i>'; }
+      h += '</div>';
     } else {
-      h += '<div class="duc4">';
+      h += '<div class="duc4wrap"><div class="duc4' + (myT ? ' myturn' : '') + '">';
       for (var c = 0; c < 7; c++) {
         var colFree = b[c] < 0;
-        h += '<button class="ducol" data-act="duMove:' + c + '"' + (myT && colFree ? '' : ' disabled') + '>';
-        for (var r = 0; r < 6; r++) { var i = r * 7 + c, x = b[i]; h += '<i class="hole' + (x >= 0 ? ' d' + x : '') + (wl.indexOf(i) >= 0 ? ' win' : '') + (g.lm === i ? ' last' : '') + '"></i>'; }
+        h += '<button class="ducol" data-act="duMove:' + c + '"' + (myT && colFree ? '' : ' disabled') + '><i class="ghost"></i>';
+        for (var r = 0; r < 6; r++) {
+          var i = r * 7 + c, x = b[i];
+          h += '<i class="hole' + (x >= 0 ? (x === me ? ' mine' : ' theirs') : '') + (wl.indexOf(i) >= 0 ? ' win' : '') + (g.lm === i ? ' last' : '') + '" style="--r:' + (r + 1) + '"></i>';
+        }
         h += '</button>';
       }
-      h += '</div>';
+      h += '</div></div>';
     }
     return h;
   }

@@ -249,7 +249,7 @@
           var pa = g.pa, pb = g.pb, w = pa === pb ? 2 : ((pa === 0 && pb === 2) || (pa === 1 && pb === 0) || (pa === 2 && pb === 1)) ? 0 : 1;
           if (w === 0) g.sa++; if (w === 1) g.sb++;
           g.last = { a: pa, b: pb, w: w }; g.pa = -1; g.pb = -1; g.round++;
-          if (g.sa >= 2 || g.sb >= 2) DL.end(d, g.sa >= 2 ? 0 : 1, 'win'); else d.deadline = now + RPS_MS + 3000;
+          if (g.sa >= 3 || g.sb >= 3) DL.end(d, g.sa >= 3 ? 0 : 1, 'win'); else d.deadline = now + RPS_MS + 3000;
         }
         d.ver++; return;
       }

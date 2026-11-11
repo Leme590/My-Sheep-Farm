@@ -1244,5 +1244,51 @@
     curl[k] = sprite('card-' + k, [-18, -48, 18, 2], function (g) { cardFrame(g, CARD_TH[k]); cardIcon(g, k); }, { ol: 1.3, sc: 4 }).c.toDataURL();
     return curl[k];
   };
+  /* ---------- Schere, Stein, Papier (für das Duell) ---------- */
+  var rpsurl = {};
+  A.rpsURL = function (i) {
+    if (rpsurl[i]) return rpsurl[i];
+    rpsurl[i] = sprite('rps-' + i, [-26, -50, 26, 2], function (g) {
+      if (i === 0) { // Schere
+        [[-1, 0.42], [1, -0.42]].forEach(function (s) {
+          g.save(); g.translate(0, -22); g.rotate(s[1]);
+          g.beginPath(); g.moveTo(-2.4, 0); g.lineTo(-1.2, -27); g.quadraticCurveTo(0, -30, 1.6, -27); g.lineTo(2.6, 0); g.closePath();
+          fillOut(g, vgrad(g, -28, 0, '#ffffff', '#9aa6b8'), 1.4);
+          g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-0.6, -3); g.lineTo(0, -25); g.stroke();
+          g.restore();
+        });
+        [[-8.5, -11, -0.5], [8.5, -11, 0.5]].forEach(function (r) {
+          g.save(); g.translate(r[0], r[1]); g.rotate(r[2]);
+          g.beginPath(); ell(g, 0, 0, 7.5, 9.5); ell(g, 0, 0, 3.8, 5.6); g.fillStyle = vgrad(g, -10, 10, '#ff8a5c', '#d0302a'); g.fill('evenodd');
+          g.strokeStyle = OUT; g.lineWidth = 1.6; g.beginPath(); ell(g, 0, 0, 7.5, 9.5); g.stroke(); g.beginPath(); ell(g, 0, 0, 3.8, 5.6); g.stroke();
+          g.restore();
+        });
+        g.beginPath(); circ(g, 0, -22, 2.6); fillOut(g, '#ffd23f', 1.2);
+        glint(g, -10, -42, 2.6);
+      } else if (i === 1) { // Stein
+        g.beginPath(); g.moveTo(-21, -6); g.quadraticCurveTo(-24, -24, -12, -33); g.quadraticCurveTo(-2, -42, 10, -36); g.quadraticCurveTo(23, -30, 22, -14); g.quadraticCurveTo(22, -3, 10, -2); g.lineTo(-14, -2); g.quadraticCurveTo(-20, -2, -21, -6); g.closePath();
+        fillOut(g, vgrad(g, -40, -2, '#b9c0c8', '#6b7480'), 1.8);
+        g.save(); g.clip();
+        g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); ell(g, -6, -30, 10, 5); g.fill();
+        g.fillStyle = 'rgba(0,0,0,.15)'; g.beginPath(); ell(g, 8, -6, 16, 6); g.fill();
+        g.fillStyle = '#6fbf4a'; g.beginPath(); ell(g, -12, -31, 6, 3); g.fill(); g.beginPath(); ell(g, -5, -35.5, 4, 2.2); g.fill();
+        g.restore();
+        line(g, [4, -28, 8, -21, 6, -15], 'rgba(40,30,30,.55)', 1.2); line(g, [-10, -14, -5, -11], 'rgba(40,30,30,.45)', 1);
+        [[-9, -20], [12, -24], [2, -9]].forEach(function (p) { g.fillStyle = 'rgba(60,60,70,.35)'; g.beginPath(); circ(g, p[0], p[1], 1.4); g.fill(); });
+        glint(g, -12, -38, 2.4);
+      } else { // Papier
+        g.save(); g.translate(0, -24); g.rotate(-0.12);
+        g.beginPath(); g.moveTo(-15, -21); g.lineTo(8, -21); g.lineTo(16, -13); g.lineTo(16, 20); g.quadraticCurveTo(0, 16, -15, 21); g.closePath();
+        fillOut(g, vgrad(g, -21, 21, '#ffffff', '#e4e9ee'), 1.6);
+        g.beginPath(); g.moveTo(8, -21); g.lineTo(8, -13); g.lineTo(16, -13); g.closePath(); fillOut(g, '#cfd6de', 1.2);
+        g.strokeStyle = '#8fb6e8'; g.lineWidth = 1.1;
+        for (var y = -10; y <= 12; y += 5) { g.beginPath(); g.moveTo(-11, y); g.lineTo(12, y - 0.5); g.stroke(); }
+        g.strokeStyle = '#ff8a9a'; g.beginPath(); g.moveTo(-8, -18); g.lineTo(-8, 18); g.stroke();
+        g.restore();
+        glint(g, 14, -44, 2.2);
+      }
+    }, { ol: 1.4, sc: 4 }).c.toDataURL();
+    return rpsurl[i];
+  };
   A.cardBackURL = function () { return A.cardURL('back'); };
 })(window.SI);

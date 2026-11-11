@@ -470,8 +470,8 @@ begin
       sb := (g->>'sb')::int + case when w = 1 then 1 else 0 end;
       g := g || jsonb_build_object('pa', -1, 'pb', -1, 'sa', sa, 'sb', sb, 'round', (g->>'round')::int + 1,
         'last', jsonb_build_object('a', pa, 'b', pb, 'w', w));
-      if sa >= 2 or sb >= 2 then
-        update duels set game = g, state = 'done', winner = case when sa >= 2 then 0 else 1 end, reason = 'win', ver = ver + 1 where id = d.id returning * into d;
+      if sa >= 3 or sb >= 3 then
+        update duels set game = g, state = 'done', winner = case when sa >= 3 then 0 else 1 end, reason = 'win', ver = ver + 1 where id = d.id returning * into d;
       else
         update duels set game = g, deadline = now() + interval '23 seconds', ver = ver + 1 where id = d.id returning * into d;
       end if;
