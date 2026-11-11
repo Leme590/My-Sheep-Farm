@@ -636,9 +636,11 @@ create table if not exists public.clubs (
   created_at  timestamptz not null default now()
 );
 create unique index if not exists clubs_name_lower on public.clubs (lower(name));
+alter table public.clubs add column if not exists racer jsonb not null default '{}'::jsonb;
 alter table public.clubs enable row level security;
 revoke all on public.clubs from anon, authenticated;
 alter table public.players add column if not exists club uuid references public.clubs(id) on delete set null;
+alter table public.players add column if not exists club_since timestamptz;
 create index if not exists players_club on public.players (club);
 
 -- gewonnene Duelle eines Spielers (direkt aus den Duellen gezählt, kann man nicht schummeln)
@@ -688,7 +690,7 @@ $$;
 
 create or replace function public.club_view(p_club uuid, p_me uuid)
 returns json language sql security definer set search_path = public as $$
-  select json_build_object('id', c.id, 'name', c.name, 'crest', c.crest, 'owner', o.username, 'mine', exists (select 1 from players m where m.id = p_me and m.club = c.id),
+  select json_build_object('id', c.id, 'name', c.name, 'crest', c.crest, 'racer', c.racer, 'owner', o.username, 'mine', exists (select 1 from players m where m.id = p_me and m.club = c.id),
     'members', coalesce((select json_agg(json_build_object('username', p.username, 'income', p.income, 'wins', duel_wins(p.id), 'owner', p.id = c.owner) order by p.income desc)
                          from players p where p.club = c.id), '[]'::json))
   from clubs c left join players o on o.id = c.owner where c.id = p_club;
@@ -734,7 +736,7 @@ begin
   if nm !~ '^[A-Za-z0-9ÄÖÜäöüß _-]{3,20}$' then raise exception 'club_name'; end if;
   if exists (select 1 from clubs where lower(name) = lower(nm)) then raise exception 'club_taken'; end if;
   insert into clubs (name, crest, owner) values (nm, club_crest(p_crest), me.id) returning id into cid;
-  update players set club = cid where id = me.id;
+  update players set club = cid, club_since = now() where id = me.id;
   return club_view(cid, me.id);
 end $$;
 
@@ -748,7 +750,7 @@ begin
   if not found then raise exception 'club_gone'; end if;
   select count(*) into n from players where club = p_id;
   if n >= 15 then raise exception 'club_full'; end if;
-  update players set club = p_id where id = me.id;
+  update players set club = p_id, club_since = now() where id = me.id;
   return club_view(p_id, me.id);
 end $$;
 
@@ -791,3 +793,117 @@ grant execute on function public.sp_club_create(uuid, text, jsonb) to anon;
 grant execute on function public.sp_club_join(uuid, uuid) to anon;
 grant execute on function public.sp_club_leave(uuid) to anon;
 grant execute on function public.sp_club_crest(uuid, jsonb) to anon;
+
+-- ===================== Schafrennen-Cup jeden Freitag (Teil 6) =====================
+-- Kann auch nachträglich ausgeführt werden: einfach diese ganze Datei nochmal "Run".
+create table if not exists public.race_pts (
+  day      date not null,
+  player   uuid not null references public.players(id) on delete cascade,
+  club     uuid not null references public.clubs(id) on delete cascade,
+  points   integer not null default 0,
+  claimed  boolean not null default false,
+  primary key (day, player, club)
+);
+create index if not exists race_pts_club on public.race_pts (day, club);
+alter table public.race_pts enable row level security;
+revoke all on public.race_pts from anon, authenticated;
+
+-- Renntag nach deutscher Zeit
+create or replace function public.race_today() returns date language sql stable as $$ select (now() at time zone 'Europe/Berlin')::date; $$;
+-- letzter Freitag (heute zählt mit)
+create or replace function public.race_friday(d date) returns date language sql immutable as $$ select d - ((extract(isodow from d)::int - 5 + 7) % 7); $$;
+
+-- Renn-Schaf prüfen
+create or replace function public.club_racer(c jsonb)
+returns jsonb language plpgsql immutable as $$
+begin
+  return jsonb_build_object(
+    'col', least(greatest(coalesce((c->>'col')::int, 0), 0), 15),
+    'pat', least(greatest(coalesce((c->>'pat')::int, 0), 0), 7),
+    'acc', least(greatest(coalesce((c->>'acc')::int, 0), 0), 15));
+exception when others then
+  return '{"col":0,"pat":0,"acc":0}'::jsonb;
+end $$;
+
+create or replace function public.sp_club_racer(p_token uuid, p_racer jsonb)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players;
+begin
+  me := duel_me(p_token);
+  update clubs set racer = club_racer(p_racer) where id = me.club and owner = me.id;
+  if not found then raise exception 'club_not_owner'; end if;
+  return club_view(me.club, me.id);
+end $$;
+
+-- Punkte für den eigenen Club (nur freitags, höchstens 500 pro Spieler und Tag)
+create or replace function public.sp_race_add(p_token uuid, p_points int)
+returns int language plpgsql security definer set search_path = public as $$
+declare me players; d date := race_today(); have int; n int;
+begin
+  me := duel_me(p_token);
+  if extract(isodow from d) <> 5 or me.club is null then return 0; end if;
+  select coalesce(sum(points), 0) into have from race_pts where day = d and player = me.id;
+  n := least(greatest(coalesce(p_points, 0), 0), 60, 500 - have);
+  if n <= 0 then return 0; end if;
+  insert into race_pts (day, player, club, points) values (d, me.id, me.club, n)
+    on conflict (day, player, club) do update set points = race_pts.points + excluded.points;
+  return n;
+end $$;
+
+create or replace function public.race_rows(d date)
+returns json language sql stable security definer set search_path = public as $$
+  select coalesce(json_agg(r order by r.points desc), '[]'::json) from (
+    select c.id, c.name, c.crest, c.racer, sum(rp.points)::int as points,
+      (select count(*) from players p where p.club = c.id) as members
+    from race_pts rp join clubs c on c.id = rp.club
+    where rp.day = d group by c.id order by 5 desc limit 30) r;
+$$;
+
+create or replace function public.sp_race_board(p_token uuid)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players; d date := race_today(); fri boolean; lastd date;
+begin
+  me := duel_me(p_token);
+  fri := extract(isodow from d) = 5;
+  lastd := case when fri then d - 7 else race_friday(d) end;
+  return json_build_object(
+    'friday', fri,
+    'rows', case when fri then race_rows(d) else '[]'::json end,
+    'last', race_rows(lastd),
+    'mine', coalesce((select sum(points) from race_pts where day = d and player = me.id), 0),
+    'myclub', me.club);
+end $$;
+
+-- Belohnung für den letzten Freitag abholen (einmal)
+create or replace function public.sp_race_claim(p_token uuid)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players; d date := race_today(); lastd date; r race_pts; place int; cname text;
+begin
+  me := duel_me(p_token);
+  lastd := case when extract(isodow from d) = 5 then d - 7 else race_friday(d) end;
+  if exists (select 1 from race_pts where day = lastd and player = me.id and claimed) then return null; end if;
+  select * into r from race_pts where day = lastd and player = me.id and not claimed and points > 0 order by points desc limit 1;
+  if r.player is null then
+    -- Kai: alle Mitglieder der Top-3-Clubs bekommen die Belohnung, auch ohne eigene Punkte
+    if me.club is null or me.club_since is null or (me.club_since at time zone 'Europe/Berlin')::date > lastd then return null; end if;
+    select x.pl into place from (
+      select rp.club, rank() over (order by sum(rp.points) desc) as pl from race_pts rp where rp.day = lastd group by rp.club) x
+      where x.club = me.club;
+    if place is null or place > 3 then return null; end if;
+    insert into race_pts(day, player, club, points, claimed) values (lastd, me.id, me.club, 0, true) on conflict do nothing;
+    select name into cname from clubs where id = me.club;
+    return json_build_object('place', place, 'club', cname, 'points', 0, 'day', lastd);
+  end if;
+  update race_pts set claimed = true where day = lastd and player = me.id;
+  select x.pl into place from (
+    select rp.club, rank() over (order by sum(rp.points) desc) as pl from race_pts rp where rp.day = lastd group by rp.club) x
+    where x.club = r.club;
+  select name into cname from clubs where id = r.club;
+  return json_build_object('place', place, 'club', cname, 'points', r.points, 'day', lastd);
+end $$;
+
+revoke execute on function public.race_rows(date) from public, anon, authenticated;
+grant execute on function public.sp_club_racer(uuid, jsonb) to anon;
+grant execute on function public.sp_race_add(uuid, int) to anon;
+grant execute on function public.sp_race_board(uuid) to anon;
+grant execute on function public.sp_race_claim(uuid) to anon;

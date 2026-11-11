@@ -189,7 +189,7 @@
     var s = set(p);
     if (a === 'qClaim') {
       var q = s.list[i]; if (!q || q.cl || !done(q)) return;
-      q.cl = 1; SFX('daily'); give(q.rw);
+      q.cl = 1; G.S.stats.quests = (G.S.stats.quests || 0) + 1; SFX('daily'); give(q.rw);
     } else if (a === 'qBonus') {
       if (s.bonus || !s.list.every(function (x) { return x.cl; })) return;
       s.bonus = 1; SFX('trumpet'); BONUS[p].forEach(function (r) { give(r); });
@@ -204,5 +204,5 @@
   });
 
   setInterval(check, 1000);
-  SI.quests = { set: set, check: check };
+  SI.quests = { set: set, check: check, boxFor: boxFor };
 })(window.SI);

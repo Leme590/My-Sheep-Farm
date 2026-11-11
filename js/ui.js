@@ -164,8 +164,39 @@
     var d = res.deko;
     hiddenDeko[d.id] = (hiddenDeko[d.id] || 0) + 1;
     reveal({ done: function () { hiddenDeko[d.id] = Math.max(0, (hiddenDeko[d.id] || 0) - 1); if (sheet && sheet.name === 'deko') renderSheet(); }, rc: SI.RAR[d.r].col, r: d.r, box: A.boxURL(rarBoxCol(r)), pic: A.dekoURL(d), isNew: res.isNew, newText: 'Neue Deko entdeckt!', big: 'lm'.indexOf(d.r) >= 0,
-      body: '<div class="rlabel">Deko · ' + SI.RAR[d.r].n + '</div><h2>' + esc(d.n) + '</h2><p>+' + Math.round(SI.DEKO_BONUS[d.r] * 100) + ' % Geld, wenn sie auf der Farm steht' + (d.light ? '. Leuchtet nachts!' : '.') + '</p>',
+      body: '<div class="rlabel">Deko · ' + SI.RAR[d.r].n + '</div><h2>' + esc(d.n) + '</h2><p>' + (d.ev === 'cup' ? '🏆 Exklusiv vom Schafrennen-Cup! Gibt es nur in dieser Woche. Bringt keinen Bonus, ist aber zum Angeben da.' : '+' + Math.round(SI.DEKO_BONUS[d.r] * 100) + ' % Geld, wenn sie auf der Farm steht' + (d.light ? '. Leuchtet nachts!' : '.')) + '</p>',
       again: '<button class="btn purple" data-act="placeNow:' + d.id + '">Gleich aufstellen</button>' });
+  }
+
+  // Turnier-Kiste: Kiste wackelt, dann kommen 3 Belohnungen nacheinander heraus
+  function turnierReveal(list) {
+    var tiles = list.map(function (x, i) {
+      var pic, col, top, name, sub;
+      if (x.kind === 'sheep' && x.res && x.res.t) {
+        var t = x.res.t; if (x.res.isNew) F.markNew(t.id);
+        pic = A.sheepURL(t); col = SI.RAR[t.r].col; top = SI.RAR[t.r].n; name = t.n; sub = '+' + fmt(t.inc) + '/Sek.' + (x.res.placed ? '' : ' · Scheune');
+      } else if (x.kind === 'deko') {
+        var d = x.res.deko; pic = A.dekoURL(d); col = SI.RAR[d.r].col; top = 'Deko · ' + SI.RAR[d.r].n; name = d.n; sub = '+' + Math.round(SI.DEKO_BONUS[d.r] * 100) + ' % Geld';
+      } else { pic = ''; col = '#ffc21a'; top = 'Münzen'; name = '+' + fmt(x.coins); sub = x.min + ' Min. Einkommen'; }
+      var isNew = x.res && x.res.isNew;
+      return '<div class="tw" style="--rc:' + col + ';--d:' + (i * 0.55) + 's">' + (isNew ? '<span class="tnew">NEU!</span>' : '') +
+        (pic ? '<img src="' + pic + '" alt="">' : '<span class="tcoin">💰</span>') + '<small>' + esc(top) + '</small><b>' + esc(name) + '</b><em class="num">' + esc(sub) + '</em></div>';
+    }).join('');
+    modal('<div class="modal reveal turnier opening" style="--wait:2400ms"><div class="stage"><div class="rays" hidden></div><img class="shake shk-l" src="' + A.boxURL('turnier') + '" alt=""></div>' +
+      '<h2>Turnier-Kiste</h2><div class="twins" hidden>' + tiles + '</div><div class="btns" id="rvBtns" style="visibility:hidden"><button class="btn" data-act="close">Super!</button></div></div>',
+    function (ov) {
+      SFX('shake', 'l');
+      setTimeout(function () {
+        var md = ov.querySelector('.modal.turnier'); if (!md) return;
+        md.classList.remove('opening'); md.style.setProperty('--rc', '#ffc21a');
+        ov.querySelectorAll('.rays').forEach(function (x) { x.hidden = false; });
+        var im = ov.querySelector('.stage img'); im.className = 'pic tsmall';
+        ov.querySelector('.twins').hidden = false; flash('#ffe066'); confetti(md, 60, '#ffc21a'); SFX('trumpet');
+        [0, 1, 2].forEach(function (i) { setTimeout(function () { if (md.isConnected) { SFX('pop'); var t = md.querySelectorAll('.tw')[i]; if (t) sparks(t, 18); } }, 550 * i + 200); });
+        setTimeout(function () { var b = ov.querySelector('#rvBtns'); if (b) b.style.visibility = 'visible'; }, 1700);
+        refresh();
+      }, 2400);
+    });
   }
 
   /* ---------- Login ---------- */
@@ -446,16 +477,23 @@
         h += '</div>';
       });
     } else {
-      var m = Object.keys(G.S.dekoFound).length;
-      h += '<div class="bar"><i style="width:' + (m / SI.DEKO.length * 100) + '%"></i></div><p class="hint num">' + m + ' von ' + SI.DEKO.length + ' Deko-Sachen gefunden.</p>';
+      var norm = SI.DEKO.filter(function (d) { return d.ev !== 'cup'; }), m = norm.filter(function (d) { return G.S.dekoFound[d.id]; }).length;
+      h += '<div class="bar"><i style="width:' + (m / norm.length * 100) + '%"></i></div><p class="hint num">' + m + ' von ' + norm.length + ' Deko-Sachen gefunden.</p>';
       ['c', 'r', 'e', 'l', 'm'].forEach(function (r) {
         h += '<h3 class="rc-' + r + '" style="font-size:17px">' + SI.RAR[r].n + '</h3><div class="grid">';
-        SI.DEKO.filter(function (d) { return d.r === r; }).forEach(function (d) {
+        norm.filter(function (d) { return d.r === r; }).forEach(function (d) {
           var f = G.S.dekoFound[d.id];
           h += '<div class="tile"><img src="' + A.dekoURL(d, !f) + '" alt=""><b>' + (f ? esc(d.n) : '???') + '</b><small>' + (f ? '+' + Math.round(SI.DEKO_BONUS[r] * 100) + ' % Geld' + (d.light ? ' · leuchtet' : '') : 'noch nicht gefunden') + '</small></div>';
         });
         h += '</div>';
       });
+      // Exklusive Cup-Dekos: nur sichtbar, wenn man sie besitzt
+      var ex = SI.DEKO.filter(function (d) { return d.ev === 'cup' && G.S.dekoFound[d.id]; });
+      if (ex.length) {
+        h += '<h3 class="rc-m" style="font-size:17px">🏆 Exklusive Dekorationen</h3><div class="grid">' + ex.map(function (d) {
+          return '<div class="tile"><img src="' + A.dekoURL(d, false) + '" alt=""><b>' + esc(d.n) + '</b><small>🏆 Schafrennen-Cup</small></div>';
+        }).join('') + '</div>';
+      }
     }
     return { title: 'Sammelbuch', html: h };
   };
@@ -697,7 +735,7 @@
   function placeDeko(id, x, y) {
     if (G.placeDeko(id, x, y)) {
       SFX('place');
-      toast(SI.DK[id].n + ' aufgestellt! +' + Math.round(SI.DEKO_BONUS[SI.DK[id].r] * 100) + ' % Geld');
+      toast(SI.DK[id].n + ' aufgestellt!' + (SI.DK[id].ev === 'cup' ? ' 🏆' : ' +' + Math.round(SI.DEKO_BONUS[SI.DK[id].r] * 100) + ' % Geld'));
       if (!G.S.dekoInv[id]) setMode('normal');
       saveLocal(); refresh();
     }
@@ -859,7 +897,7 @@
   /* ---------- für duel.js ---------- */
   SI.ui = { toast: toast, modal: modal, nextModal: nextModal, closeModal: closeModal, esc: esc, SFX: SFX, flash: function (c) { flash(c); }, sparks: sparks,
     me: function () { return me; }, refresh: refresh, renderSheet: renderSheet, openSheet: openSheet, closeSheet: closeSheet,
-    sheepReveal: sheepReveal, dekoReveal: dekoReveal, setMode: function (m) { setMode(m); },
+    sheepReveal: sheepReveal, turnierReveal: turnierReveal, dekoReveal: dekoReveal, setMode: function (m) { setMode(m); },
     sheet: function () { return sheet; }, saveLocal: saveLocal, saveCloud: saveCloud, views: VIEWS, modalOpen: function () { return modalOpen; }, hooks: [] };
 
   /* ---------- Start ---------- */

@@ -486,7 +486,7 @@
     view: function (id, meK) {
       var c = LC.all()[id]; if (!c) return null;
       var a = LOCAL.all(), mem = LC.members(id, a), ow = c.owner === 'schafbot' ? N.BOT : a[c.owner] ? a[c.owner].username : '';
-      return { id: id, name: c.name, crest: c.crest, owner: ow, mine: !!(a[meK] && a[meK].club === id), members: mem };
+      return { id: id, name: c.name, crest: c.crest, racer: c.racer || {}, owner: ow, mine: !!(a[meK] && a[meK].club === id), members: mem };
     },
     rows: function () {
       var cl = LC.all();
@@ -537,7 +537,66 @@
         c.crest = crestOk(crest); LC.put(cl); return LC.view(id, f.k);
       });
     },
-    board: function () { return Promise.resolve(LC.rows().slice(0, 200)); }
+    board: function () { return Promise.resolve(LC.rows().slice(0, 200)); },
+    racer: function (tok, r) {
+      return LC.run(tok, function (f) {
+        var id = f.a[f.k].club, cl = LC.all(), c = cl[id];
+        if (!c || c.owner !== f.k) throw new Error('club_not_owner');
+        c.racer = racerOk(r); LC.put(cl); return LC.view(id, f.k);
+      });
+    }
+  };
+  function racerOk(r) { r = r || {}; var f = function (v, mx) { v = parseInt(v, 10); return isNaN(v) ? 0 : Math.max(0, Math.min(mx, v)); }; return { col: f(r.col, 15), pat: f(r.pat, 7), acc: f(r.acc, 15) }; }
+
+  /* ---------- Schafrennen (freitags) ---------- */
+  function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  N.raceFriday = function () { return !!SI.raceForce || new Date().getDay() === 5; };
+  function lastFriday() { var d = new Date(); d.setHours(12, 0, 0, 0); var back = (d.getDay() - 5 + 7) % 7; if (back === 0 && N.raceFriday()) back = 7; if (SI.raceForce) back = 7; d.setDate(d.getDate() - back); return ymd(d); }
+  function today() { return ymd(new Date()); }
+  var LR = {
+    all: function () { return lsGet('schaf_race', { pts: {}, claimed: {} }); },
+    put: function (r) { lsSet('schaf_race', r); },
+    rows: function (day, live) {
+      var R = LR.all(), d = R.pts[day] || {}, cl = LC.all(), out = [];
+      Object.keys(d).forEach(function (id) { var c = cl[id]; if (!c) return; var p = 0; Object.keys(d[id]).forEach(function (k) { p += d[id][k]; }); out.push({ id: id, name: c.name, crest: c.crest, racer: c.racer || {}, points: p, members: LC.members(id).length }); });
+      // die Schafbot-Bande rennt im Test-Modus von allein mit
+      if (live && cl.bot && !d.bot) { var now = new Date(), m = now.getHours() * 60 + now.getMinutes(); out.push({ id: 'bot', name: cl.bot.name, crest: cl.bot.crest, racer: cl.bot.racer || { col: 8, pat: 1, acc: 3 }, points: 20 + Math.floor(m * 0.12), members: LC.members('bot').length }); }
+      return out.sort(function (a, b) { return b.points - a.points; });
+    }
+  };
+  N.race = {
+    add: function (tok, n) {
+      if (ONLINE) return rpc('sp_race_add', { p_token: tok, p_points: n });
+      return LC.run(tok, function (f) {
+        var id = f.a[f.k].club; if (!N.raceFriday() || !id || !LC.all()[id]) return 0;
+        var R = LR.all(), d = R.pts[today()] = R.pts[today()] || {}, have = 0;
+        Object.keys(d).forEach(function (c) { have += d[c][f.k] || 0; });
+        n = Math.max(0, Math.min(n | 0, 60, 500 - have)); if (!n) return 0;
+        d[id] = d[id] || {}; d[id][f.k] = (d[id][f.k] || 0) + n; LR.put(R); return n;
+      });
+    },
+    board: function (tok) {
+      if (ONLINE) return rpc('sp_race_board', { p_token: tok });
+      return LC.run(tok, function (f) {
+        var fri = N.raceFriday(), R = LR.all(), d = R.pts[today()] || {}, mine = 0;
+        Object.keys(d).forEach(function (c) { mine += d[c][f.k] || 0; });
+        return { friday: fri, rows: fri ? LR.rows(today(), true) : [], last: LR.rows(lastFriday(), false), mine: fri ? mine : 0, myclub: f.a[f.k].club || null };
+      });
+    },
+    claim: function (tok) {
+      if (ONLINE) return rpc('sp_race_claim', { p_token: tok });
+      return LC.run(tok, function (f) {
+        var day = lastFriday(), R = LR.all(), d = R.pts[day]; if (!d) return null;
+        R.claimed[day] = R.claimed[day] || {}; if (R.claimed[day][f.k]) return null;
+        var best = null; Object.keys(d).forEach(function (c) { if ((d[c][f.k] || 0) > 0 && (!best || d[c][f.k] > d[best][f.k])) best = c; });
+        var rows = LR.rows(day, false), place = 0, pts = best ? d[best][f.k] : 0;
+        if (!best) { best = f.a[f.k].club; if (!best) return null; } // auch ohne eigene Punkte: Top 3 bekommt was
+        rows.forEach(function (r, i) { if (r.id === best) place = i + 1; });
+        if (!place || (!pts && place > 3)) return null;
+        R.claimed[day][f.k] = true; LR.put(R);
+        return { place: place, club: (LC.all()[best] || {}).name || '', points: pts, day: day };
+      });
+    }
   };
   N.club = {
     list: function (tok, q) { return ONLINE ? rpc('sp_club_list', { p_token: tok, p_search: q || '' }).then(function (r) { return r || []; }) : LCL.list(tok, q); },
@@ -547,6 +606,7 @@
     join: function (tok, id) { return ONLINE ? rpc('sp_club_join', { p_token: tok, p_id: id }) : LCL.join(tok, id); },
     leave: function (tok) { return ONLINE ? rpc('sp_club_leave', { p_token: tok }) : LCL.leave(tok); },
     crest: function (tok, crest) { return ONLINE ? rpc('sp_club_crest', { p_token: tok, p_crest: crestOk(crest) }) : LCL.crest(tok, crest); },
+    racer: function (tok, r) { return ONLINE ? rpc('sp_club_racer', { p_token: tok, p_racer: racerOk(r) }) : LCL.racer(tok, r); },
     board: function () { return ONLINE ? rpc('sp_club_board', {}).then(function (r) { return r || []; }) : LCL.board(); }
   };
 

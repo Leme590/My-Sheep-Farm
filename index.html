@@ -778,6 +778,74 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 .duwin{color:#2e9a22;font-weight:900}.dulose{color:#c42a1c;font-weight:900}
 .duinv .duswords{font-size:56px;animation:duspin 1.2s ease-in-out infinite}
 #duel .btns .btn{flex:1 1 auto}
+
+/* Schafrennen */
+.hchip.racechip{position:relative;border:3px solid var(--out)!important;box-shadow:0 3px 0 var(--out)!important;font-family:var(--display);font-weight:400;font-size:14px;color:#fff;text-shadow:var(--ts-s);background:repeating-linear-gradient(45deg,#2a2a35 0 8px,#3d3d4c 8px 16px);animation:rcpulse 1.1s ease-in-out infinite}
+.hchip.racechip[hidden]{display:none}
+@keyframes rcpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08);filter:brightness(1.25)}}
+.btn.racebtn{background:linear-gradient(#ffe066,#ff9a1a);color:#fff;text-shadow:var(--ts-s);margin-top:8px}
+.racer{display:block;overflow:visible}
+.racer.run .bd{animation:rbob .36s ease-in-out infinite}
+.racer.run .lg{transform-box:fill-box;transform-origin:50% 0}
+.racer.run .lg.a{animation:rleg .36s ease-in-out infinite}
+.racer.run .lg.b{animation:rleg .36s ease-in-out infinite reverse}
+@keyframes rbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes rleg{0%,100%{transform:rotate(28deg)}50%{transform:rotate(-28deg)}}
+.card.rhead{display:flex;flex-direction:row;gap:12px;align-items:center}
+.rflag{font-size:42px;animation:rwave 1.4s ease-in-out infinite;transform-origin:20% 90%}
+@keyframes rwave{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(10deg)}}
+.rtrack{position:relative;background:linear-gradient(#7cc24f,#5ea83a);border:3px solid var(--out);border-radius:16px;padding:8px 34px 8px 8px;margin:0 0 12px;overflow:hidden;flex:none}
+.rlane{margin:4px 0;padding:2px 0;border-bottom:2px dashed rgba(255,255,255,.45)}
+.rlane:last-of-type{border-bottom:0}
+.rlane.me .rlbl{background:#fff3b0}
+.rlbl{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.88);border-radius:10px;padding:1px 8px;font-size:12px;font-weight:900;max-width:100%}
+.rlbl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
+.rlbl em{font-style:normal;color:#c0560f}
+.rway{position:relative;height:46px;background:linear-gradient(#c99a62,#b5854f);border-radius:8px;margin-top:3px}
+.rrun{position:absolute;bottom:0;transition:left 1.2s ease-out}
+.rfinish{position:absolute;right:8px;top:0;bottom:0;width:18px;background:repeating-conic-gradient(#222 0 25%,#fff 0 50%) 0 0/12px 12px;border-left:2px solid var(--out);border-right:2px solid var(--out)}
+.rpts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.rpts span{display:flex;justify-content:space-between;align-items:center;background:var(--panel2,#f3ead7);border-radius:10px;padding:5px 8px;font-size:13px;font-weight:800}
+.rpts b{color:#2fb36b}
+.rprize{display:flex;gap:8px;justify-content:center;margin:6px 0}
+.rpi{flex:1;max-width:110px;text-align:center;background:linear-gradient(#fff6d6,#ffe39a);border:3px solid var(--out);border-radius:14px;padding:6px 4px;box-shadow:0 3px 0 var(--out)}
+.rpi img{width:56px;height:56px;object-fit:contain;display:block;margin:0 auto}
+.rpi b{display:block;font-family:var(--display);font-weight:400;font-size:30px;line-height:56px;color:#ff9a1a;text-shadow:var(--ts-s)}
+.rpi small{display:block;font-weight:900;font-size:11px}
+.rpod{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin-top:8px}
+.rp{flex:1;max-width:120px;text-align:center;position:relative;display:flex;flex-direction:column;align-items:center}
+.rp b{font-size:13px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp small{font-size:11px;font-weight:800;opacity:.75}
+.rp .crown{position:absolute;top:-22px;font-size:24px;animation:mbang 1.6s ease-in-out infinite}
+.rp .step{width:100%;border:3px solid var(--out);border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:24px;color:#fff;text-shadow:var(--ts-s);margin-top:4px}
+.rp.p1 .step{height:70px;background:linear-gradient(#ffe066,#f3b31a)}
+.rp.p2 .step{height:50px;background:linear-gradient(#e6ecf3,#a9b6c6)}
+.rp.p3 .step{height:36px;background:linear-gradient(#f0b07a,#c0743a)}
+.card.rmine{display:flex;flex-direction:row;gap:10px;align-items:center}
+.rprev{display:flex;justify-content:center;background:linear-gradient(#bfe8ff,#e9f8ff);border:3px solid var(--out);border-radius:14px;padding:10px;margin-bottom:10px}
+.rprev.sm{padding:4px;margin:0;flex:none}
+.redit h4{margin:10px 0 4px}
+.cpick.rpats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cpick.rpats button{display:flex;flex-direction:column;align-items:center;padding:4px 2px}
+.cpick.rpats small{font-size:10px;font-weight:800}
+.modal.race{text-align:center}
+.modal.race .racer{margin:0 auto}
+.rbigm{font-size:72px;animation:mbang 1.2s ease-in-out infinite}
+
+/* Turnier-Kiste */
+.modal.turnier h2{margin:0 0 4px}
+.modal.turnier .stage .pic.tsmall{width:110px;height:96px}
+.modal.turnier:not(.opening) .stage{height:120px}
+.twins{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 10px}
+.twins[hidden]{display:none}
+.tw{position:relative;background:linear-gradient(#fffdf2,#fff0c2);border:3px solid var(--out);border-radius:14px;box-shadow:0 3px 0 var(--out),0 0 14px var(--rc);padding:6px 4px;display:flex;flex-direction:column;align-items:center;gap:1px;opacity:0;transform:scale(.3) translateY(40px);animation:twin .55s cubic-bezier(.2,1.6,.4,1) forwards;animation-delay:var(--d)}
+.tw img{width:62px;height:56px;object-fit:contain}
+.tw .tcoin{font-size:40px;line-height:56px}
+.tw small{font-size:10px;font-weight:900;color:var(--rc);text-shadow:0 1px 0 rgba(0,0,0,.35);text-transform:uppercase}
+.tw b{font-size:12px;line-height:1.1;text-align:center}
+.tw em{font-style:normal;font-size:10px;font-weight:800;opacity:.75;text-align:center}
+.tw .tnew{position:absolute;top:-10px;right:-6px;background:#ff3b30;color:#fff;font-family:var(--display);font-size:11px;padding:1px 6px;border-radius:8px;border:2px solid var(--out)}
+@keyframes twin{to{opacity:1;transform:none}}
 </style>
 
 <canvas id="farm" aria-label="Deine Schaf-Farm"></canvas>
@@ -792,6 +860,7 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
       <button class="hchip questchip" data-act="sheet:quests" aria-label="Aufgaben">📜 Aufgaben<i class="dot" id="dotQuest" hidden></i></button>
       <button class="hchip visitchip" data-act="sheet:besuch" aria-label="Farmen besuchen">🏡 Besuchen</button>
       <button class="hchip clubchip" data-act="sheet:club" aria-label="Clubs">🛡️ Club</button>
+      <button class="hchip racechip" id="raceChip" data-act="sheet:rennen" aria-label="Schafrennen" hidden>🏁 Schafrennen!</button>
     </div>
   </div>
   <div class="sp"></div>
@@ -852,6 +921,7 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 <script src="js/quest.js"></script>
 <script src="js/visit.js"></script>
 <script src="js/club.js"></script>
+<script src="js/race.js"></script>
 <!--APP-END-->
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

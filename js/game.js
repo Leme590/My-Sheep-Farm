@@ -132,7 +132,7 @@
   G.barn = function () { return Object.keys(G.S.sheep).filter(function (t) { return G.extras(t) > 0; }); };
 
   G.dekoBonus = function () {
-    var b = 0; G.S.dekoPlaced.forEach(function (p) { b += SI.DEKO_BONUS[SI.DK[p.id].r]; }); return b;
+    var b = 0; G.S.dekoPlaced.forEach(function (p) { b += SI.DK[p.id].ev === 'cup' ? 0 : SI.DEKO_BONUS[SI.DK[p.id].r]; }); return b;
   };
   G.globalMult = function () {
     return (1 + 0.05 * G.card('gold')) * (1 + G.dekoBonus()) * G.rbMult() * G.boostMult();
@@ -241,6 +241,23 @@
     var t = rnd(pool);
     var res = G.addSheep(t.id);
     return { t: t, box: b, isNew: res.isNew, placed: res.placed, built: res.built, pen: res.pen };
+  };
+
+  // Turnier-Kiste: 3 zufällige Belohnungen (Schaf, Deko oder Münzen)
+  G.openTurnier = function () {
+    var T = SI.TURNIER, out = [], inc = G.fullIncome() / G.boostMult(); // Münzen nach dem Einkommen vor der Kiste
+    for (var i = 0; i < T.n; i++) {
+      var sum = 0, k; for (k in T.w) sum += T.w[k];
+      var x = Math.random() * sum, kind = 'coins'; for (k in T.w) { if ((x -= T.w[k]) < 0) { kind = k; break; } }
+      if (kind === 'sheep') out.push({ kind: 'sheep', res: G.openBox('turnier', true) });
+      else if (kind === 'deko') out.push({ kind: 'deko', res: G.giveDeko(T.deko) });
+      else {
+        var min = T.coinMin[0] + Math.random() * (T.coinMin[1] - T.coinMin[0]);
+        var c = Math.max(25000, Math.round(inc * 60 * min));
+        G.S.coins += c; G.S.total += c; out.push({ kind: 'coins', coins: c, min: Math.round(min) });
+      }
+    }
+    return out;
   };
 
   /* ---------- Deko-Shop (jeden Tag neu) ---------- */

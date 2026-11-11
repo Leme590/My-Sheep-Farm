@@ -93,6 +93,13 @@ window.SI = window.SI || {};
   // Nacho-Box: nur am Taco Tuesday, nur mexikanische Schafe (steht nicht in SI.BOX, damit der Händler sie nicht anbietet)
   SI.NACHO = { k: 'nacho', n: 'Nacho-Box', cost: 75e6, odds: { e: 60, l: 35, m: 5 }, card: 8, col: '#ffb52e', ev: 'taco' };
   SI.BK.nacho = SI.NACHO;
+  // Turnier-Kiste: gibt es nur als Belohnung beim Schafrennen-Cup (Kai).
+  // 3 zufällige Belohnungen. Schafe wie die drittbeste Kiste, Deko wie die zweitbeste Deko-Kiste (legendär).
+  SI.BK.turnier = { k: 'turnier', n: 'Turnier-Kiste', cost: 0, odds: SI.BK.regen.odds, card: 0, col: '#ffc21a' };
+  SI.TURNIER = { n: 3, w: { sheep: 45, deko: 30, coins: 25 }, deko: 'l', coinMin: [20, 60] };
+  // Exklusive Cup-Deko: jede Woche eine andere (Start: Freitag 13.11.2026)
+  SI.CUP_DEKO = ['cupPokal', 'cupFlagge', 'cupBogen', 'cupPodest', 'cupStatue', 'cupAmpel', 'cupLorbeer', 'cupKanone', 'cupHufeisen', 'cupMedaille'];
+  SI.cupDekoFor = function (day) { var p = String(day || '').split('-'), d = new Date(+p[0], (+p[1] || 1) - 1, +p[2] || 1, 12), w = Math.round((d - new Date(2026, 10, 13, 12)) / 6048e5); return SI.CUP_DEKO[((w % 10) + 10) % 10]; };
 
   // Upgrade-Karten (Kai): per = Bonus pro Karte in %, max = höchstens so viele Karten (ohne max: unendlich)
   SI.CARDS = [
@@ -129,6 +136,17 @@ window.SI = window.SI || {};
     { id: 'drache', n: 'Drachenstatue', r: 'm', rad: 36, light: 120 },
     { id: 'ufo', n: 'UFO', r: 'm', rad: 28, light: 180 },
     // Taco Tuesday: mexikanische Deko, nur aus der Taco-Kiste
+    // Schafrennen-Cup: jede Woche eine exklusive Deko für den Sieger-Club (ohne Bonus, Kai)
+    { id: 'cupPokal', n: 'Goldener Cup-Pokal', r: 'm', rad: 16, ev: 'cup' },
+    { id: 'cupFlagge', n: 'Zielflagge', r: 'm', rad: 12, ev: 'cup' },
+    { id: 'cupBogen', n: 'Ziel-Bogen', r: 'm', rad: 30, ev: 'cup' },
+    { id: 'cupPodest', n: 'Sieger-Podest', r: 'm', rad: 26, ev: 'cup' },
+    { id: 'cupStatue', n: 'Diamantschaf-Statue', r: 'm', rad: 20, ev: 'cup' },
+    { id: 'cupAmpel', n: 'Start-Ampel', r: 'm', rad: 10, ev: 'cup' },
+    { id: 'cupLorbeer', n: 'Lorbeerkranz', r: 'm', rad: 18, ev: 'cup' },
+    { id: 'cupKanone', n: 'Konfetti-Kanone', r: 'm', rad: 22, ev: 'cup' },
+    { id: 'cupHufeisen', n: 'Goldenes Hufeisen', r: 'm', rad: 16, ev: 'cup' },
+    { id: 'cupMedaille', n: 'Riesen-Medaille', r: 'm', rad: 16, ev: 'cup' },
     { id: 'kaktus', n: 'Kaktus', r: 'r', rad: 14, ev: 'taco' },
     { id: 'papelgirlande', n: 'Fiesta-Girlande', r: 'r', rad: 24, ev: 'taco' },
     { id: 'sombrero', n: 'Riesen-Sombrero', r: 'e', rad: 24, ev: 'taco' },
@@ -161,7 +179,7 @@ window.SI = window.SI || {};
     { k: 'ball', n: 'Schafologe', d: 'Finde alle 24 Schafe', t: function (S) { return Object.keys(S.found).length >= SI.TYPES.length; } },
     { k: 'd1', n: 'Dekorateur', d: 'Stelle deine erste Deko auf', t: function (S) { return S.dekoPlaced.length >= 1; } },
     { k: 'd10', n: 'Schöne Farm', d: 'Stelle 10 Deko-Sachen auf', t: function (S) { return S.dekoPlaced.length >= 10; } },
-    { k: 'dm', n: 'Wunderding', d: 'Finde eine mythische Deko', t: function (S) { return SI.DEKO.some(function (d) { return d.r === 'm' && S.dekoFound[d.id]; }); } },
+    { k: 'dm', n: 'Wunderding', d: 'Finde eine mythische Deko', t: function (S) { return SI.DEKO.some(function (d) { return d.r === 'm' && d.ev !== 'cup' && S.dekoFound[d.id]; }); } },
     { k: 'p6', n: 'Großgrundbesitzer', d: 'Besitze 6 Gehege', t: function (S, G) { return G.penCount() >= 6; } },
     { k: 'mio', n: 'Millionär', d: 'Verdiene insgesamt 1 M', t: function (S) { return S.total >= 1e6; } },
     { k: 'mrd', n: 'Milliardär', d: 'Verdiene insgesamt 1 B', t: function (S) { return S.total >= 1e9; } },

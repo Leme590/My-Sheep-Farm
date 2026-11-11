@@ -79,6 +79,7 @@
       h += '<div class="card chead">' + crest(m.crest, 96, 'big') + '<div class="cht"><small>Dein Club</small><h2>' + esc(m.name) + '</h2>' +
         '<div class="stats num"><span>Mitglieder</span><b>' + m.members.length + ' / ' + MAX + '</b><span>Geld zusammen</span><b>' + fmt(t.inc) + '/Sek.</b><span>Duell-Siege zusammen</span><b>' + t.wins + '</b></div></div></div>';
       if (owner) h += '<button class="btn purple wide" data-act="clEditCrest">🎨 Wappen ändern</button>';
+      h += '<button class="btn racebtn wide" data-act="sheet:rennen">🏁 Schafrennen-Cup' + (SI.net.raceFriday() ? ' · HEUTE!' : '') + '</button>';
       h += '<div class="card"><h3>Mitglieder</h3>' + memberRows(m, me) + '</div>';
       h += '<p class="hint center">In der Bestenliste (🏆) gibt es eine Rangliste für Clubs. Da wird das Geld pro Sekunde von allen Mitgliedern zusammengezählt.</p>';
       h += '<button class="btn red wide" data-act="clLeaveAsk">Club verlassen</button>';
