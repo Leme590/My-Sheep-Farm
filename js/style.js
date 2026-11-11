@@ -889,7 +889,7 @@
   };
   // Wanderhändler mit Karren (steht neben dem Bauernhaus, solange er da ist)
   A.merchantSpr = function (fr) {
-    return sprite('mer|' + fr, [-40, -78, 40, 6], function (g) {
+    return sprite('mer2|' + fr, [-42, -78, 60, 8], function (g) {
       var wave = Math.sin(fr / 8 * TAU);
       // Karren
       g.beginPath(); rrect(g, -34, -30, 50, 18, 3); sfill(g, '#b8743c', 1.4);
@@ -910,17 +910,45 @@
       // Räder
       [[-24, -10], [8, -10]].forEach(function (w) { g.beginPath(); g.arc(w[0], w[1], 8, 0, TAU); sfill(g, '#6b4424', 1.4); g.fillStyle = '#c9a070'; circ(g, w[0], w[1], 2.4);
         g.strokeStyle = '#c9a070'; g.lineWidth = 1.2; for (var k = 0; k < 4; k++) { var a = k / 4 * Math.PI; g.beginPath(); g.moveTo(w[0] - Math.cos(a) * 6, w[1] - Math.sin(a) * 6); g.lineTo(w[0] + Math.cos(a) * 6, w[1] + Math.sin(a) * 6); g.stroke(); } });
-      // Händler: Mantel, Bart, großer Hut, winkt
-      g.beginPath(); g.moveTo(22, 2); g.quadraticCurveTo(20, -22, 28, -28); g.lineTo(34, -28); g.quadraticCurveTo(42, -22, 40, 2); g.closePath(); sfill(g, '#5b3f9e', 1.4);
-      g.fillStyle = '#ffcf3a'; g.fillRect(22, -10, 18, 3);
-      g.beginPath(); g.arc(31, -34, 7.5, 0, TAU); sfill(g, '#ffd2a8', 1.3);
-      g.beginPath(); g.moveTo(25, -32); g.quadraticCurveTo(31, -22, 37, -32); g.quadraticCurveTo(31, -29, 25, -32); sfill(g, '#f4f1e6', 1);
-      g.fillStyle = OUT; circ(g, 28.6, -35.5, 1); circ(g, 33.6, -35.5, 1);
-      g.fillStyle = '#ff9a8a'; circ(g, 31, -32.6, 1.6);
-      g.beginPath(); g.ellipse(31, -41, 13, 3.4, 0, 0, TAU); sfill(g, '#3a2a5e', 1.3);
-      g.beginPath(); rrect(g, 25, -52, 12, 11, 3); sfill(g, '#3a2a5e', 1.3); g.fillStyle = '#ffcf3a'; g.fillRect(25, -45, 12, 2.4);
-      g.save(); g.translate(39, -24); g.rotate(-1.2 + wave * 0.45);
-      g.beginPath(); rrect(g, -2.5, -14, 5, 15, 2.5); sfill(g, '#5b3f9e', 1.2); g.beginPath(); g.arc(0, -15, 3, 0, TAU); sfill(g, '#ffd2a8', 1); g.restore();
+      // Händler: freundlicher Opa mit Weste, großen Augen, Lächeln und Hut mit Feder, winkt
+      var bob = Math.abs(Math.sin(fr / 8 * TAU)) * 1.2;
+      g.save(); g.translate(0, -bob);
+      // Beine und Schuhe
+      g.beginPath(); rrect(g, 25, -6, 5, 8, 2); sfill(g, '#6b4424', 1.1); g.beginPath(); rrect(g, 32, -6, 5, 8, 2); sfill(g, '#6b4424', 1.1);
+      // Körper: grünes Hemd, orange Weste, runder Bauch
+      g.beginPath(); g.moveTo(21, -2); g.quadraticCurveTo(18, -24, 27, -29); g.lineTo(35, -29); g.quadraticCurveTo(44, -24, 41, -2); g.closePath(); sfill(g, '#4caf50', 1.4);
+      g.beginPath(); g.moveTo(22, -4); g.quadraticCurveTo(20, -22, 27, -27); g.lineTo(29, -6); g.closePath(); sfill(g, '#ff9f1c', 1.1);
+      g.beginPath(); g.moveTo(40, -4); g.quadraticCurveTo(42, -22, 35, -27); g.lineTo(33, -6); g.closePath(); sfill(g, '#ff9f1c', 1.1);
+      g.fillStyle = '#ffe066'; circ(g, 31, -18, 1.3); circ(g, 31, -12, 1.3);
+      // andere Hand hält eine kleine Kiste
+      g.beginPath(); rrect(g, 15, -16, 9, 8, 1.5); sfill(g, '#ffcf3a', 1.1); line(g, [19.5, -16, 19.5, -8], '#d0302a', 1.6);
+      g.fillStyle = '#ffd2a8'; g.beginPath(); g.arc(22, -12, 2.6, 0, TAU); sfill(g, '#ffd2a8', 1);
+      // Kopf
+      g.beginPath(); g.arc(31, -37, 9, 0, TAU); sfill(g, '#ffd8b0', 1.4);
+      // Ohren
+      g.beginPath(); g.arc(22.3, -36, 2.4, 0, TAU); sfill(g, '#ffd2a8', 1); g.beginPath(); g.arc(39.7, -36, 2.4, 0, TAU); sfill(g, '#ffd2a8', 1);
+      // rosige Bäckchen
+      g.fillStyle = 'rgba(255,120,120,.55)'; circ(g, 25.8, -33.6, 2.3); circ(g, 36.2, -33.6, 2.3);
+      // große freundliche Augen mit Glanz, hochgezogene Augenbrauen
+      g.fillStyle = OUT; g.beginPath(); g.ellipse(27.6, -38, 1.7, 2.2, 0, 0, TAU); g.fill(); g.beginPath(); g.ellipse(34.4, -38, 1.7, 2.2, 0, 0, TAU); g.fill();
+      g.fillStyle = '#fff'; circ(g, 28.1, -38.8, 0.7); circ(g, 34.9, -38.8, 0.7);
+      line(g, [25.6, -42.2, 29.4, -43], '#8a6a4a', 1.2); line(g, [32.6, -43, 36.4, -42.2], '#8a6a4a', 1.2);
+      // Nase und kleiner weißer Schnurrbart
+      g.fillStyle = '#ffb08a'; circ(g, 31, -35, 1.7);
+      g.beginPath(); g.moveTo(31, -33.6); g.quadraticCurveTo(27, -34.4, 25.8, -31.8); g.quadraticCurveTo(28.6, -32.4, 31, -32.6); g.quadraticCurveTo(33.4, -32.4, 36.2, -31.8); g.quadraticCurveTo(35, -34.4, 31, -33.6); sfill(g, '#f4f1e6', 0.9);
+      // breites offenes Lächeln
+      g.beginPath(); g.moveTo(27.6, -31.4); g.quadraticCurveTo(31, -26.4, 34.4, -31.4); g.closePath(); sfill(g, '#a8323a', 1);
+      g.fillStyle = '#ff8a95'; g.beginPath(); g.ellipse(31, -29.4, 1.8, 0.9, 0, 0, TAU); g.fill();
+      // Hut: brauner Filzhut mit grünem Band und roter Feder
+      g.beginPath(); g.ellipse(31, -44.5, 12.5, 3.2, 0, 0, TAU); sfill(g, '#a0662f', 1.3);
+      g.beginPath(); g.moveTo(24, -45); g.quadraticCurveTo(24, -55, 31, -55); g.quadraticCurveTo(38, -55, 38, -45); g.closePath(); sfill(g, '#a0662f', 1.3);
+      g.fillStyle = '#4caf50'; g.fillRect(24.3, -48.4, 13.4, 2.6);
+      g.beginPath(); g.moveTo(36, -47); g.quadraticCurveTo(44, -56, 41, -61); g.quadraticCurveTo(38, -55, 35, -48); g.closePath(); sfill(g, '#e8463c', 1);
+      // winkender Arm
+      g.save(); g.translate(40, -25); g.rotate(0.75 + wave * 0.4);
+      g.beginPath(); rrect(g, -2.6, -14, 5.2, 15, 2.6); sfill(g, '#4caf50', 1.2); g.beginPath(); g.arc(0, -15.5, 3.3, 0, TAU); sfill(g, '#ffd8b0', 1);
+      g.restore();
+      g.restore();
     }, { ol: 1.5 });
   };
   A.drawMerchant = function (ctx, x, y, time) { A.blit(ctx, A.merchantSpr(Math.floor((time % 1.2) / 1.2 * 8)), x, y, 1, false, [36, 8]); };

@@ -195,10 +195,10 @@
   };
 
   /* ---------- Mystery-Boxen (Schafe) ---------- */
-  G.merch = null; // {k, end}
+  G.merch = null; // {k, end, off: 0.5 | 0.75 | 1}
   G.boxPrice = function (k) {
     var b = SI.BK[k], p = b.cost;
-    if (G.merch && G.merch.k === k) p *= 0.5;
+    if (G.merch && G.merch.k === k) p *= 1 - (G.merch.off || 0.5);
     return Math.ceil(p);
   };
   function rollRarity(odds, luck) {

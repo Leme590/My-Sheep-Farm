@@ -211,7 +211,7 @@
     if (!started) {
       started = true;
       F.cb = { pop: pop, toast: toast, change: refresh, pen: openPen, empty: openEmpty, dekoTap: dekoTap, moved: dekoMoved, penMoved: penMoved, house: function () { openSheet('mehr'); },
-        place: placeDeko, pickup: pickupDeko, merchant: spawnMerchant, merchantTap: function () { SFX('merchant'); openSheet('boxen'); }, busy: function () { return modalOpen; } };
+        place: placeDeko, pickup: pickupDeko, merchant: spawnMerchant, merchantTap: function () { SFX('merchant'); if (G.merch && G.merch.hide) { G.merch.hide = false; renderMerchant(); } openSheet('boxen'); }, busy: function () { return modalOpen; } };
       F.init($('#farm'));
       setInterval(tick, 250);
     }
@@ -291,16 +291,21 @@
   function spawnMerchant() {
     var aff = SI.BOX.filter(function (b) { return G.boxPrice(b.k) * 0.5 <= Math.max(G.S.coins * 1.5, 200); });
     var pool = SI.BOX.slice(0, Math.min(SI.BOX.length, aff.length + 1));
-    var b = G.rnd(pool); G.merch = { k: b.k, end: Date.now() + 60000, len: 60 };
-    renderMerchant(); SFX('merchant'); toast('Ein Wanderhändler ist da!');
+    // meistens halber Preis, manchmal 75 % billiger, ganz selten GRATIS
+    var x = Math.random(), off = x < 0.05 ? 1 : x < 0.25 ? 0.75 : 0.5;
+    var b = G.rnd(pool); G.merch = { k: b.k, end: Date.now() + 60000, len: 60, off: off };
+    renderMerchant(); SFX(off === 1 ? 'trumpet' : 'merchant'); toast(off === 1 ? '🎁 Der Händler verschenkt eine Kiste!' : 'Ein Wanderhändler ist da!');
   }
   function renderMerchant() {
     var el = $('#merchant');
-    document.body.classList.toggle('hasMerch', !!G.merch);
-    if (!G.merch) { el.innerHTML = ''; return; }
-    var b = SI.BK[G.merch.k];
-    el.innerHTML = '<div class="merchant"><span class="mbang">!</span><img src="' + A.boxURL(b.k) + '" alt=""><div class="t"><span class="mtitle">Wanderhändler ist da!</span>' + esc(b.n) + ' zum halben Preis<small class="num" id="merchT"></small></div>' +
-      '<button class="btn coin num" data-act="open:' + b.k + '" data-cost="' + G.boxPrice(b.k) + '">' + fmt(G.boxPrice(b.k)) + '</button><div class="mbar"><i id="merchBar"></i></div></div>';
+    document.body.classList.toggle('hasMerch', !!G.merch && !G.merch.hide);
+    if (!G.merch || G.merch.hide) { el.innerHTML = ''; return; }
+    var b = SI.BK[G.merch.k], off = G.merch.off || 0.5, p = G.boxPrice(b.k);
+    var cls = off === 1 ? 'free' : off === 0.75 ? 'd75' : 'd50';
+    var what = off === 1 ? esc(b.n) + ' – komplett GRATIS!' : esc(b.n) + (off === 0.75 ? ' – 75 % billiger!' : ' zum halben Preis');
+    var sign = off === 1 ? '<span class="msign free"><b>GRATIS</b></span>' : '<span class="msign ' + cls + '"><b>-' + Math.round(off * 100) + '%</b></span>';
+    el.innerHTML = '<div class="merchant ' + cls + '">' + sign + '<button class="mx" data-act="merchClose" aria-label="Schließen">✕</button><img src="' + A.boxURL(b.k) + '" alt=""><div class="t"><span class="mtitle">' + (off === 1 ? '🎁 Geschenk vom Händler!' : 'Wanderhändler ist da!') + '</span>' + what + '<small class="num" id="merchT"></small></div>' +
+      '<button class="btn coin num mbuy" data-act="open:' + b.k + '" data-cost="' + p + '"><s>' + fmt(b.cost) + '</s>' + (p > 0 ? fmt(p) : 'GRATIS') + '</button><div class="mbar"><i id="merchBar"></i></div></div>';
     merchTime();
   }
 
@@ -344,6 +349,7 @@
   }
   function untilMidnight() { var d = new Date(), m = new Date(d); m.setHours(24, 0, 0, 0); return 'Neue Kisten in ' + G.fmtTime((m - d) / 1000); }
   function costBtn(cost, act, label, cls) {
+    if (cost === 0) return '<button class="btn coin freebtn" data-act="' + act + '" data-cost="0">🎁 Gratis ' + label.toLowerCase() + '</button>';
     return '<button class="btn ' + (cls || 'coin') + '" data-act="' + act + '" data-cost="' + cost + '">' + label + ' · <span class="num">' + fmt(cost) + '</span></button>';
   }
   function tagR(r, txt) { return '<span class="tag rc-' + r + '">' + (txt || SI.RAR[r].n) + '</span>'; }
@@ -367,7 +373,8 @@
         h += '<div class="boxcard locked bx-' + b.k + '"><div class="lockimg"><img src="' + A.boxURL(b.k) + '" alt=""><span class="padlock">🔒</span></div><div style="min-width:0"><h3>' + esc(b.n) + '</h3><div class="odds">' + chips + '</div><div class="lockmsg">Ab Rebirth ' + b.rb + ' freigeschaltet</div></div></div>';
         return;
       }
-      var deal = G.merch && G.merch.k === b.k ? '<div class="deal">Händler-Angebot: halber Preis!</div>' : '';
+      var mo = G.merch && G.merch.k === b.k ? G.merch.off || 0.5 : 0;
+      var deal = mo ? '<div class="deal' + (mo === 1 ? ' free' : '') + '">Händler-Angebot: ' + (mo === 1 ? '🎁 GRATIS!' : mo === 0.75 ? '75 % billiger!' : 'halber Preis!') + '</div>' : '';
       h += '<div class="boxcard bx-' + b.k + '"><img src="' + A.boxURL(b.k) + '" alt=""><div style="min-width:0"><h3>' + esc(b.n) + '</h3>' + deal + '<div class="odds">' + chips + '</div>' + costBtn(G.boxPrice(b.k), 'open:' + b.k, 'Öffnen') + '</div></div>';
     });
     h += '<p class="hint">Die Preise bleiben immer gleich. Bessere Kisten schaltest du mit Rebirths frei. Glücksklee-Karten machen seltene Schafe wahrscheinlicher' + (G.card('glueck') ? ' (gerade +' + G.cardBonus('glueck') + ' % Glück)' : '') + '.</p>';
@@ -763,6 +770,7 @@
       case 'zin': F.zoom(1.2); break;
       case 'zout': F.zoom(1 / 1.2); break;
       case 'close': closeModal(); break;
+      case 'merchClose': if (G.merch) { G.merch.hide = true; renderMerchant(); toast('Der Händler wartet noch auf der Farm. Tipp ihn an!'); } break;
       case 'open': case 'again':
         if (a === 'again') nextModal();
         if (G.S.coins < G.boxPrice(arg)) { toast('Dir fehlen noch ' + fmt(G.boxPrice(arg) - G.S.coins) + ' Münzen.'); break; }
