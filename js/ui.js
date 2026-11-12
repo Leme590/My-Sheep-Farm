@@ -367,6 +367,8 @@
     renderSheet(); $('#sheet').hidden = false;
     document.querySelectorAll('.nb').forEach(function (b) { b.classList.toggle('on', b.dataset.act === 'sheet:' + name); });
   }
+  // Tippen neben das Menü (Querformat) schließt es
+  document.addEventListener('click', function (e) { if (e.target && e.target.id === 'sheet' && sheet) closeSheet(); });
   function closeSheet() { sheet = null; $('#sheet').hidden = true; document.querySelectorAll('.nb').forEach(function (b) { b.classList.remove('on'); }); }
   function renderSheet() {
     if (!sheet) return;

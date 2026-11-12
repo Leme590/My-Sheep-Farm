@@ -228,7 +228,7 @@ body.hasMerch #toasts{top:calc(var(--hudb,116px) + 102px)}
 /* ---------- Blätter (Menüs) ---------- */
 .sheet{position:fixed;z-index:20;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);display:flex;justify-content:center;pointer-events:none;
   padding:0 max(10px,env(safe-area-inset-right,0px)) 0 max(10px,env(safe-area-inset-left,0px))}
-.sheet .box{pointer-events:auto;width:min(560px,100%);max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 190px);background:var(--panel);border-radius:26px;box-shadow:0 10px 40px rgba(0,0,0,.35);
+.sheet .box{pointer-events:auto;width:min(560px,100%);max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 190px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 190px);background:var(--panel);border-radius:26px;box-shadow:0 10px 40px rgba(0,0,0,.35);
   display:flex;flex-direction:column;animation:up .22s ease-out}
 @keyframes up{from{transform:translateY(40px);opacity:.4}}
 .sheet .hd{display:flex;align-items:center;gap:10px;padding:14px 14px 8px 18px}
@@ -460,7 +460,7 @@ button.tile:active{transform:translateY(2px);box-shadow:0 1px 0 var(--out)}
 /* ---------- Bestenliste in der Mitte ---------- */
 .sheet[data-kind="board"]{top:0;bottom:0;align-items:center;padding:16px;background:rgba(14,22,10,.55);pointer-events:auto;z-index:30;animation:fadein .2s}
 @keyframes fadein{from{opacity:0}}
-.sheet[data-kind="board"] .box{width:min(460px,100%);max-height:min(640px,calc(100vh - 40px));animation:pin .28s cubic-bezier(.2,1.5,.4,1)}
+.sheet[data-kind="board"] .box{width:min(460px,100%);max-height:min(640px,calc(100vh - 40px));max-height:min(640px,calc(100dvh - 40px));animation:pin .28s cubic-bezier(.2,1.5,.4,1)}
 .sheet[data-kind="board"] .bd{background:linear-gradient(#fff6d6,#fffdf7 160px)}
 .sheet[data-kind="board"] .hd h2{text-align:center}
 .btabs{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
@@ -921,6 +921,25 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 .cleave{color:#c42a1c!important}
 .cpeek .cmem{width:100%;text-align:left;max-height:40vh;overflow:auto;padding:2px}
 .cpick.syms button{width:44px;height:44px;padding:2px}
+
+/* Handy: kleine Bildschirme und Querformat (Kai) */
+html,body{height:100%;height:100dvh;overflow:hidden}
+#overlay{height:100vh;height:100dvh}
+.modal{max-height:calc(100dvh - 32px)}
+@media (max-width:370px){
+  .money{padding:5px 10px 5px 6px;gap:6px}.money img{width:28px;height:28px}.money b{font-size:20px}.money small{font-size:11px}
+  .hud{gap:5px}.hchip{padding:4px 7px;font-size:12px}.hchip img{width:18px;height:18px}.hchip.gear img{width:22px;height:22px}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .sheet{top:calc(env(safe-area-inset-top,0px) + 8px);bottom:calc(env(safe-area-inset-bottom,0px) + 8px);align-items:stretch;z-index:25}
+  .sheet .box{max-height:none;height:100%;width:min(620px,100%)}
+  .sheet .hd{padding:6px 8px 8px 14px}.sheet .hd h2{font-size:22px}
+  .sheet::before{content:'';position:fixed;inset:0;background:rgba(14,22,10,.45);pointer-events:auto;z-index:-1}
+  .modal{max-height:calc(100dvh - 24px);padding:12px 16px}
+  .stage{height:120px}.stage .pic{width:120px;height:105px}.stage .shake{width:110px;height:100px}
+  .lchips{flex-direction:row;flex-wrap:wrap}
+  .modebar{bottom:calc(env(safe-area-inset-bottom,0px) + 80px)}
+}
 </style>
 
 <canvas id="farm" aria-label="Deine Schaf-Farm"></canvas>

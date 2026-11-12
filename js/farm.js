@@ -35,6 +35,9 @@
     makePatterns();
     resize();
     window.addEventListener('resize', resize);
+    // Handy drehen: Größe kommt manchmal erst später an, darum nochmal nachmessen (Kai: Querformat war verzerrt)
+    window.addEventListener('orientationchange', function () { [50, 250, 600].forEach(function (t) { setTimeout(resize, t); }); });
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
     var s = F.size();
     cam.z = W < 600 ? 0.74 : 1;
     cam.x = Math.min(s.w / 2, W / 2 / cam.z - 20); cam.yp = (TOP + 90) * K;
@@ -192,7 +195,7 @@
     if (ev.gold) {
       var gs = F.toScreen(ev.gold.x, ev.gold.y);
       if (Math.hypot(gs.x - sx, gs.y - 18 * cam.z - sy) < Math.max(34, 34 * cam.z)) {
-        var a = Math.max(100, G.fullIncome() * 120); G.earn(a); G.S.stats.golden++;
+        var a = Math.max(70, G.fullIncome() * 84); G.earn(a); G.S.stats.golden++; // Kai: 70 % von vorher (120 Sek.)
         F.cb.pop && F.cb.pop(sx, sy, '+' + G.fmt(a)); F.cb.toast && F.cb.toast('Goldenes Schaf gefangen! +' + G.fmt(a));
         ev.gold = null; SI.sfx && SI.sfx.play('gold'); F.cb.change && F.cb.change(); return;
       }
@@ -389,6 +392,7 @@
 
   function frame(nowMs) {
     var dt = Math.min(0.1, (nowMs - last) / 1000); last = nowMs; time += dt;
+    if (cv.clientWidth && (cv.clientWidth !== W || cv.clientHeight !== H)) resize(); // Bild nie verzerren
     var cyc = G.cycle();
     var sleeping = cyc.night && cyc.dark > 0.8, owlSleep = !cyc.night && cyc.dark < 0.2;
     buildTrees(); syncAgents(); moveAgents(dt, sleeping, owlSleep); events(dt, cyc);

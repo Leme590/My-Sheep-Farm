@@ -48,14 +48,15 @@
 
   function baseInc() { return G.fullIncome() / G.boostMult(); }
   function nice(x) { if (x < 100) return Math.ceil(x); var p = Math.pow(10, Math.floor(Math.log10(x)) - 1); return Math.ceil(x / p) * p; }
-  // beste freigeschaltete Kiste, die höchstens so viel kostet wie s Sekunden Geld
-  // Kai: nicht zu stark! Täglich 3 Stufen unter der besten Kiste (Galaxie -> Gold), wöchentlich 2 Stufen darunter
-  function boxFor(s) {
-    var lim = baseInc() * s, list = SI.BOX.filter(function (b) { return !b.ev && G.boxUnlocked(b.k); });
-    var top = Math.max(0, list.length - 1 - (s >= 9000 ? 2 : 3)), best = 0;
-    list.forEach(function (b, i) { if (i <= top && b.cost <= lim) best = i; });
-    return list[best].k;
-  }
+  // Kai: Kisten richten sich nach deinem Geld. Täglich: eine Kiste unter der besten, die du dir gerade leisten kannst.
+  // Wöchentlich: die beste, die du dir leisten kannst, mit kleiner Chance auf die nächstbessere.
+  var UP_CHANCE = 0.12;
+  function boxList() { return SI.BOX.filter(function (b) { return !b.ev && G.boxUnlocked(b.k); }); }
+  function bestIdx(list) { var best = 0; list.forEach(function (b, i) { if (G.boxPrice(b.k) <= G.S.coins) best = i; }); return best; }
+  function weekly(s) { return s >= 9000; }
+  function boxFor(s) { var list = boxList(), b = bestIdx(list); return list[weekly(s) ? b : Math.max(0, b - 1)].k; }
+  function boxUp(s) { var list = boxList(), b = bestIdx(list); return weekly(s) && b + 1 < list.length ? list[b + 1].k : null; }
+  function rollBox(s) { var up = boxUp(s); return up && Math.random() < UP_CHANCE ? up : boxFor(s); }
   function weekId() {
     var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Montag
     return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
@@ -97,7 +98,7 @@
   function rwText(r) {
     switch (r.t) {
       case 'coins': return '💰 ' + (r.s >= 3600 ? (r.s / 3600).toLocaleString('de-DE') + ' Std.' : r.s / 60 + ' Min.') + ' Geld';
-      case 'box': return '📦 ' + SI.BK[boxFor(r.s)].n;
+      case 'box': var up = boxUp(r.s); return '📦 ' + SI.BK[boxFor(r.s)].n + (up ? ' (' + Math.round(UP_CHANCE * 100) + ' % Chance auf ' + SI.BK[up].n + ')' : '');
       case 'boost': return '⚡ ' + r.s / 60 + ' Min. doppeltes Geld';
       case 'card': return '🃏 Upgrade-Karte';
       case 'deko': return '🎀 Deko-Kiste ' + SI.RAR[r.r].n;
@@ -115,7 +116,7 @@
   function give(r) {
     switch (r.t) {
       case 'coins': var a = G.giveSec(r.s); SFX('coin'); U.toast('+' + fmt(a) + ' Münzen!'); break;
-      case 'box': var bk = boxFor(r.s); U.sheepReveal(G.openBox(bk, true), ''); break;
+      case 'box': var bk = rollBox(r.s); if (bk !== boxFor(r.s)) { SFX('trumpet'); U.toast('🍀 Glück gehabt! Du bekommst sogar eine ' + SI.BK[bk].n + '!'); } U.sheepReveal(G.openBox(bk, true), ''); break;
       case 'boost': G.addBoost(r.s); SFX('unlock'); U.flash('#ffe066'); U.toast('⚡ Doppeltes Geld für ' + r.s / 60 + ' Minuten!'); break;
       case 'card': var c = G.rollCard(); G.S.cards[c.k] = G.card(c.k) + 1; U.sheepReveal({ card: c, box: SI.BK.holz }, ''); break;
       case 'deko': U.dekoReveal(G.giveDeko(r.r), r.r); break;
