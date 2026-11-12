@@ -63,6 +63,19 @@ window.SI = window.SI || {};
       pen: { name: 'Diamantmine', g: '#e6fbff', s: '#bff5ff', sk: 'dot', props: ['diamond', 'crystal:#7fd8ff', 'diamond'], glow: '#7fd8ff' } },
     { id: 'sonne', n: 'Sonnenschaf', r: 's', inc: 75000000, w: ['#fff6c0', '#ffd23f', '#ff8a00'], f: '#5a2a00', sun: 1,
       pen: { name: 'Sonnenblumenfeld', g: '#ffe28a', s: '#fff3c0', sk: 'dot', props: ['sunflower', 'sunflower', 'sunflower'], glow: '#ffd23f' } },
+    // Piraten (Kai, 12.11.2026): ganz normal in den Kisten
+    { id: 'matrose', n: 'Matrosenschaf', r: 'c', inc: 5, w: ['#ffffff', '#e8eef8'], f: '#3b3330',
+      pen: { name: 'Hafensteg', g: '#c9a26a', s: '#b38a52', sk: 'stripe', props: ['anchor', 'rope', 'barrelp'] } },
+    { id: 'papagei', n: 'Papageienschaf', r: 'r', inc: 60, w: ['#b5f07a', '#4cc25a'], f: '#2a4a1e',
+      pen: { name: 'Papageien-Insel', g: '#f0d9a0', s: '#f8e8bd', sk: 'dot', props: ['palm', 'bush', 'palm'] } },
+    { id: 'pirat', n: 'Piratenschaf', r: 'e', inc: 2500, w: ['#8a8f9a', '#4a4f5a'], f: '#1c1a20',
+      pen: { name: 'Piratenbucht', g: '#ecd59a', s: '#dfc47e', sk: 'dot', props: ['skullflag', 'cannonball', 'barrelp'] } },
+    { id: 'kapitaen', n: 'Kapitänsschaf', r: 'l', inc: 70000, w: ['#ffffff', '#dfe6f5', '#9aa8d8'], f: '#2a1d14',
+      pen: { name: 'Kapitänsdeck', g: '#a8743f', s: '#8f6033', sk: 'stripe', props: ['shipwheel', 'cannon', 'chest'] } },
+    { id: 'geist', n: 'Geisterpiratenschaf', r: 'm', inc: 25000000, w: ['#d8fff0', '#7fe8c4', '#2c8a72'], f: '#103a30',
+      pen: { name: 'Geisterschiff', g: '#1f3a3a', s: '#3fe0b0', sk: 'dot', props: ['ghostlantern', 'skullflag', 'chest'], glow: '#5fffc8' } },
+    { id: 'schatz', n: 'Schatzschaf', r: 's', inc: 32000, w: ['#fff1a8', '#f5c542', '#c98a12'], f: '#5a3a00',
+      pen: { name: 'Schatzinsel', g: '#f0d9a0', s: '#ffe9a0', sk: 'dot', props: ['chest', 'palm', 'coin'], glow: '#ffd23f' } },
     // Taco Tuesday (Kai): gibt es nur dienstags aus der Nacho-Box. ev = Event, kommt nicht in normalen Boxen vor
     { id: 'guac', n: 'Guacamoleschaf', r: 'e', inc: 2000, ev: 'taco', w: ['#d9f08a', '#8cc63f', '#4f8a2a'], f: '#1f3a12',
       pen: { name: 'Avocado-Hain', g: '#d8b47a', s: '#e8cc95', sk: 'dot', props: ['avocado', 'cactus', 'avocado'] } },
@@ -75,7 +88,7 @@ window.SI = window.SI || {};
   ];
   SI.T = {};
   SI.TYPES.forEach(function (t) { SI.T[t.id] = t; });
-  SI.RECIPES = { 'eis+feuer': 'dampf', 'moos+nacht': 'zebra', 'blitz+kristall': 'gewitter', 'gold+kristall': 'diamant', 'drache+feuer': 'lava', 'galaxie+regen': 'sonne', 'chili+guac': 'taco' };
+  SI.RECIPES = { 'eis+feuer': 'dampf', 'moos+nacht': 'zebra', 'blitz+kristall': 'gewitter', 'gold+kristall': 'diamant', 'drache+feuer': 'lava', 'galaxie+regen': 'sonne', 'chili+guac': 'taco', 'gold+pirat': 'schatz' };
 
   // rb = ab welchem Rebirth die Kiste freigeschaltet ist
   SI.BOX = [
@@ -135,6 +148,15 @@ window.SI = window.SI || {};
     { id: 'kristallbaum', n: 'Kristallbaum', r: 'm', rad: 28, light: 200 },
     { id: 'drache', n: 'Drachenstatue', r: 'm', rad: 36, light: 120 },
     { id: 'ufo', n: 'UFO', r: 'm', rad: 28, light: 180 },
+    // Piraten (Kai)
+    { id: 'kugeln', n: 'Kanonenkugeln', r: 'c', rad: 14 },
+    { id: 'seilrolle', n: 'Seilrolle', r: 'c', rad: 15 },
+    { id: 'anker', n: 'Riesenanker', r: 'r', rad: 18 },
+    { id: 'palme', n: 'Palmen-Insel', r: 'r', rad: 24 },
+    { id: 'kanone', n: 'Piratenkanone', r: 'e', rad: 24 },
+    { id: 'schatztruhe', n: 'Schatztruhe', r: 'e', rad: 20, light: 60 },
+    { id: 'piratenflagge', n: 'Piratenflagge', r: 'l', rad: 14 },
+    { id: 'piratenschiff', n: 'Piratenschiff', r: 'm', rad: 46, light: 150 },
     // Taco Tuesday: mexikanische Deko, nur aus der Taco-Kiste
     // Schafrennen-Cup: jede Woche eine exklusive Deko für den Sieger-Club (ohne Bonus, Kai)
     { id: 'cupPokal', n: 'Goldener Cup-Pokal', r: 'm', rad: 16, ev: 'cup' },
