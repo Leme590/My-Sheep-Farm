@@ -627,7 +627,25 @@ body.quake #overlay{animation:quake .6s ease-out}
 .sellbtns .btn{flex:1 1 auto;padding:8px 10px;font-size:14px}
 .sellcard{background:linear-gradient(#fff,#fff7dc)!important}
 @media (max-width:370px){.mtiles{grid-template-columns:repeat(2,1fr)}.kgrid,.agrid{grid-template-columns:1fr}}
-.rnm .field{text-align:left}.rnm .hint{margin:0}
+.rnm .field{text-align:left}
+/* Tutorial */
+#tut{position:fixed;inset:0;z-index:70;pointer-events:auto}
+#tut.nospot{background:rgba(14,22,10,.6)}
+.tspot{position:fixed;border-radius:18px;box-shadow:0 0 0 9999px rgba(14,22,10,.6),0 0 0 4px #ffd23f,0 0 24px 6px rgba(255,210,63,.8);transition:all .35s cubic-bezier(.3,1.3,.5,1);animation:tglow 1.4s ease-in-out infinite;pointer-events:none}
+@keyframes tglow{50%{box-shadow:0 0 0 9999px rgba(14,22,10,.6),0 0 0 6px #ffd23f,0 0 34px 10px rgba(255,210,63,.95)}}
+.tbub{position:fixed;background:#fff;border:3px solid var(--out);border-radius:22px;box-shadow:0 5px 0 var(--out),0 12px 30px rgba(0,0,0,.35);padding:12px 14px 14px;display:flex;flex-direction:column;gap:9px;animation:pin .3s cubic-bezier(.2,1.5,.4,1);transition:top .3s,left .3s}
+.tbub.up::before,.tbub.down::after{content:'';position:absolute;left:calc(var(--ax,50%) - 11px);width:18px;height:18px;background:#fff;border:3px solid var(--out);transform:rotate(45deg)}
+.tbub.up::before{top:-12px;border-right:0;border-bottom:0}
+.tbub.down::after{bottom:-12px;border-left:0;border-top:0}
+.thead{display:flex;align-items:center;gap:10px}
+.thead img{width:58px;height:50px;flex:none;animation:bob 2s ease-in-out infinite}
+.thead small{font-weight:900;color:var(--muted);font-size:11px}
+.thead h3{font-size:21px;color:#fff;text-shadow:var(--ts-s);line-height:1.1}
+.tbub p{margin:0;font-weight:700;font-size:14.5px;line-height:1.4}
+.tdots{display:flex;justify-content:center;gap:5px}
+.tdots i{width:8px;height:8px;border-radius:50%;background:#d9dde3;border:1.5px solid var(--out)}
+.tdots i.done{background:#8ee66f}.tdots i.on{background:#ffc21a;transform:scale(1.35)}
+.tbub .btns .btn{padding:7px 12px;font-size:15px}.rnm .hint{margin:0}
 .field input,.field select{font:inherit;font-size:16px;color:var(--ink);padding:10px 12px;border:2.5px solid var(--out);border-radius:12px;background:#fff;box-shadow:inset 0 2px 0 rgba(0,0,0,.08);width:100%;min-width:0}
 .codein{font-family:var(--display)!important;font-size:22px!important;text-align:center;letter-spacing:.06em}
 .seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:6px}
@@ -1075,6 +1093,7 @@ html,body{height:100%;height:100dvh;overflow:hidden}
 <script src="js/visit.js"></script>
 <script src="js/club.js"></script>
 <script src="js/race.js"></script>
+<script src="js/tutorial.js"></script>
 <!--APP-END-->
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

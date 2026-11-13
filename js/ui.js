@@ -260,10 +260,8 @@
     if (away > 60 && use) {
       toast('Willkommen zurück! Deine Schafe haben auf dich gewartet.');
     } else if (!use) {
-      modal('<div class="modal"><img src="' + A.sheepURL(T.wiese) + '" alt="" style="width:120px;height:106px;align-self:center"><h2>Hallo ' + esc(me.username) + '!</h2>' +
-        '<p>Das ist deine Farm. Dein erstes Wiesenschaf verdient schon Geld, auch wenn du nichts machst. Aber nur, solange das Spiel offen ist!</p>' +
-        '<p class="hint">Wische über den Bildschirm, um dich umzusehen. Tippe auf Gehege zum Ausbauen. Über jedem Gehege steht in Grün, wie viel Geld es pro Sekunde macht. Neue Schafe gibt es in den Boxen.</p>' +
-        '<div class="btns"><button class="btn coin" data-act="close">Los geht\'s!</button></div></div>');
+      // Neue Spieler bekommen das Tutorial (Kai), sobald andere Fenster zu sind
+      if (SI.tut) SI.tut.queue();
     }
     $('#adminChip').hidden = !me.admin;
     showDaily();
@@ -570,6 +568,7 @@
       mtile('🐺', 'Wölfe verjagt', G.S.stats.wolves) + mtile('✨', 'Goldene Schafe', G.S.stats.golden) + mtile('🏷️', 'Schafe verkauft', G.S.stats.sold || 0) + '</div><p class="hint">Geld verdienen: nur im Spiel</p>');
     // Konto und Einstellungen
     h += msec('konto', 'Konto und Einstellungen', '', '<div class="mrow"><div><b>Einstellungen</b><p class="hint">Sprache wählen und Soundeffekte und Musik an- und ausschalten oder leiser machen.</p></div><button class="btn blue" data-act="sheet:settings">Öffnen</button></div>' +
+      '<div class="mrow"><div><b>Tutorial</b><p class="hint">Schäfer Wolle zeigt dir nochmal alles Wichtige.</p></div><button class="btn purple" data-act="tutorial">Ansehen</button></div>' +
       '<div class="mrow"><div><b>Als App aufs Handy</b><p class="hint"><b>iPhone:</b> In Safari unten auf Teilen tippen, dann „Zum Home-Bildschirm“.<br><b>Android:</b> In Chrome oben rechts auf die drei Punkte, dann „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p></div></div>' +
       '<div class="mrow"><div><b>Account</b><p class="hint">Angemeldet als <b>' + esc(me ? me.username : '') + '</b>' + (N.online ? '. Dein Spielstand wird online gespeichert, du kannst auf jedem Gerät weiterspielen.' : '. Test-Modus: nur auf diesem Gerät gespeichert.') + '</p></div><button class="btn red" data-act="logout">Abmelden</button></div>');
     return { title: 'Mehr', html: h };
@@ -894,6 +893,7 @@
       case 'closeSheet': SFX('close'); closeSheet(); break;
       case 'sound': SI.sfx.setOn(!SI.sfx.on()); SFX('click'); renderSheet(); break;
       case 'settings': openSheet('settings'); break;
+      case 'tutorial': if (SI.tut) SI.tut.start(); break;
       case 'mjump': var mj = document.getElementById('m-' + arg), bd = mj && mj.closest('.bd'); if (bd) { SFX('tab'); var nv = bd.querySelector('.mnav'); bd.scrollTo({ top: bd.scrollTop + mj.getBoundingClientRect().top - bd.getBoundingClientRect().top - (nv ? nv.offsetHeight + 8 : 0), behavior: 'smooth' }); } break;
       case 'lang': if ((arg === 'auto') !== SI.i18n.auto || (arg !== 'auto' && arg !== SI.i18n.lang)) { saveLocal(); SI.i18n.set(arg); } break;
       case 'nextTrack': SI.sfx.nextTrack(); toast('Das nächste Stück kommt gleich.'); break;
