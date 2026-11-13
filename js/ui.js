@@ -513,30 +513,65 @@
     }
     return { title: 'Sammelbuch', html: h };
   };
+  // Mehr-Menü (Kai: übersichtlich mit Farben): oben Sprung-Knöpfe, darunter farbige Abschnitte
+  var MSEC = [
+    { id: 'daily', ic: '🎁', n: 'Belohnung', c: '#4cc93a', c2: '#2e9a22' },
+    { id: 'rebirth', ic: '🔄', n: 'Rebirth', c: '#ff5f9a', c2: '#d0306a' },
+    { id: 'karten', ic: '🃏', n: 'Karten', c: '#4a9cf5', c2: '#2565c0' },
+    { id: 'erfolge', ic: '🏆', n: 'Erfolge', c: '#ffc21a', c2: '#d98e00' },
+    { id: 'stats', ic: '📊', n: 'Statistik', c: '#2cc7a8', c2: '#14907a' },
+    { id: 'konto', ic: '⚙️', n: 'Konto', c: '#8a93ab', c2: '#5a6380' }
+  ];
+  var CARD_COL = { glueck: ['#5fd16a', '#e8fbe6'], gold: ['#f2b632', '#fff6d6'], hirte: ['#c98a4a', '#f8ecdc'], technik: ['#4a9cf5', '#e3f0ff'], hund: ['#8a6a50', '#f1e9e1'] };
+  function msec(id, title, extra, body) {
+    var m = MSEC.filter(function (x) { return x.id === id; })[0];
+    return '<section class="msec" id="m-' + id + '" style="--mc:' + m.c + ';--mc2:' + m.c2 + '"><div class="mhd"><span class="mic">' + m.ic + '</span><h3>' + title + '</h3>' + (extra || '') + '</div><div class="mbd">' + body + '</div></section>';
+  }
+  function mtile(ic, label, val, cls) { return '<div class="mtile' + (cls ? ' ' + cls : '') + '"><i>' + ic + '</i><small>' + label + '</small><b class="num">' + val + '</b></div>'; }
   VIEWS.mehr = function () {
-    var h = '', ready = G.dailyReady(), idx = G.dailyIndex(), doneN = ready ? idx : ((G.S.daily.streak - 1) % 7) + 1;
-    h += '<div class="card"><h3>Tägliche Belohnung</h3><div class="days">' + SI.DAILY.map(function (d, i) {
+    var h = '<div class="mnav">' + MSEC.map(function (m) { return '<button style="--mc:' + m.c + ';--mc2:' + m.c2 + '" data-act="mjump:' + m.id + '"><i>' + m.ic + '</i>' + m.n + '</button>'; }).join('') + '</div>';
+    // Tägliche Belohnung
+    var ready = G.dailyReady(), idx = G.dailyIndex(), doneN = ready ? idx : ((G.S.daily.streak - 1) % 7) + 1;
+    h += msec('daily', 'Tägliche Belohnung', ready ? '<span class="mbadge pulse">!</span>' : '', '<div class="days">' + SI.DAILY.map(function (d, i) {
       return '<div class="day' + (i < doneN ? ' done' : '') + (ready && i === idx ? ' now' : '') + '">Tag ' + (i + 1) + '<br>' + esc(d) + '</div>';
-    }).join('') + '</div>' + (ready ? '<button class="btn" data-act="showDaily">Jetzt abholen</button>' : '<p class="hint">Heute schon abgeholt. Morgen gibt es das nächste Geschenk.</p>') + '</div>';
-    var rc = G.rebirthCost();
-    h += '<div class="card"><h3>Rebirth</h3><p class="hint">Fang neu an und werde stärker: Du verdienst danach für immer +25 % mehr pro Rebirth, deine Farm bekommt 2 neue Plätze und du schaltest bessere Kisten frei. Jeder Rebirth ist viel teurer als der davor. Es gibt insgesamt ' + G.MAXRB + ' Rebirths. Deko, Sammelbuch und Erfolge bleiben.</p>' +
-      '<div class="stats num"><span>Rebirths</span><b>' + G.S.rebirths + ' / ' + G.MAXRB + '</b><span>Geld-Bonus jetzt</span><b>×' + G.rbMult().toLocaleString('de-DE') + '</b><span>Farm-Plätze</span><b>' + G.plotCount() + (G.rebirthMax() ? '' : ' → ' + (G.plotCount() + G.RB_PLOTS)) + '</b></div>' +
-      (G.rebirthMax() ? '<p class="hint" style="text-align:center"><b>Alle ' + G.MAXRB + ' Rebirths geschafft!</b> Mehr gibt es nicht. Jetzt kannst du dein Imperium voll ausbauen.</p>' : costBtn(rc, 'rebirthAsk', 'Rebirth', 'pink')) + '</div>';
-    h += '<div class="card"><h3>Upgrade-Karten</h3><p class="hint">Karten kommen manchmal aus Mystery-Boxen. Bei einem Rebirth fangen sie wieder bei 0 an.</p><div class="list cardlist">' + SI.CARDS.map(function (c) {
-      var n = G.card(c.k), mx = G.cardMaxed(c.k);
-      return '<div class="li cardli' + (n ? '' : ' none') + (mx ? ' maxed' : '') + '"><img src="' + A.cardURL(c.k) + '" alt=""><div class="t"><b>' + esc(c.n) + '</b><small>' + esc(c.d) + (c.max > 1 ? ' · höchstens ' + c.max + ' Karten' : !c.max ? ' · ohne Grenze' : '') + '</small></div>' +
-        '<div class="cnum num"><b>' + (c.per ? n + '×' : n ? '✔' : '–') + '</b><small>' + (mx && c.max > 1 ? 'MAX ' : '') + esc(c.per ? cardTotal(c).replace(/ \(.*\)$/, '') : (n ? 'aktiv' : 'fehlt noch')) + '</small></div></div>';
-    }).join('') + '</div></div>';
+    }).join('') + '</div>' + (ready ? '<button class="btn" data-act="showDaily">Jetzt abholen</button>' : '<p class="hint">Heute schon abgeholt. Morgen gibt es das nächste Geschenk.</p>'));
+    // Rebirth
+    var rc = G.rebirthCost(), mx = G.rebirthMax(), rb = G.S.rebirths, rbody = '<div class="rbdots">';
+    for (var k = 0; k < G.MAXRB; k++) rbody += '<i class="' + (k < rb ? 'on' : k === rb ? 'next' : '') + '">' + (k + 1) + '</i>';
+    rbody += '</div><div class="mtiles">' + mtile('🔄', 'Rebirths', rb + ' / ' + G.MAXRB) + mtile('💰', 'Geld-Bonus jetzt', '×' + G.rbMult().toLocaleString('de-DE')) +
+      mtile('🌱', 'Farm-Plätze', G.plotCount() + (mx ? '' : ' → ' + (G.plotCount() + G.RB_PLOTS))) + '</div>';
+    if (mx) rbody += '<p class="hint" style="text-align:center"><b>Alle ' + G.MAXRB + ' Rebirths geschafft!</b> Mehr gibt es nicht. Jetzt kannst du dein Imperium voll ausbauen.</p>';
+    else {
+      var pct = Math.min(100, G.S.coins / rc * 100);
+      rbody += '<div class="mgoal"><div class="mgl"><span>Nächster Rebirth</span><b class="num">' + fmt(Math.min(G.S.coins, rc)) + ' / ' + fmt(rc) + '</b></div><div class="bar"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+        '<p class="hint">Danach: <b>×' + G.rbMult(rb + 1).toLocaleString('de-DE') + ' Geld</b>, <b>+' + G.RB_PLOTS + ' Plätze</b> und bessere Kisten. Münzen, Schafe, Gehege und Karten fangen wieder bei 0 an. Deko, Sammelbuch und Erfolge bleiben.</p></div>' +
+        costBtn(rc, 'rebirthAsk', 'Rebirth', 'pink');
+    }
+    h += msec('rebirth', 'Rebirth', '', rbody);
+    // Upgrade-Karten
+    var cn = SI.CARDS.reduce(function (a, c) { return a + G.card(c.k); }, 0);
+    h += msec('karten', 'Upgrade-Karten', '<span class="mbadge num">' + cn + '</span>', '<p class="hint">Karten kommen manchmal aus Mystery-Boxen. Bei einem Rebirth fangen sie wieder bei 0 an.</p><div class="kgrid">' + SI.CARDS.map(function (c) {
+      var n = G.card(c.k), full = G.cardMaxed(c.k), col = CARD_COL[c.k] || ['#4a9cf5', '#e3f0ff'];
+      var val = c.per ? cardTotal(c).replace(/ \(.*\)$/, '') : (n ? 'aktiv' : 'fehlt noch');
+      var bar = c.max > 1 ? '<div class="kbar"><i style="width:' + Math.min(100, n / c.max * 100) + '%"></i><span class="num">' + Math.min(n, c.max) + ' / ' + c.max + '</span></div>' : !c.max ? '<div class="kbar inf"><span>∞ ohne Grenze</span></div>' : '';
+      return '<div class="kcard' + (n ? '' : ' none') + (full ? ' maxed' : '') + '" style="--kc:' + col[0] + ';--kb:' + col[1] + '">' + (full ? '<span class="kmax">MAX</span>' : '') +
+        '<img src="' + A.cardURL(c.k) + '" alt=""><b class="kn">' + esc(c.n) + '</b><span class="kcnt num">' + (c.per ? n + '×' : n ? '✔' : '–') + '</span>' +
+        '<span class="kval">' + esc(val) + '</span><small>' + esc(c.d) + '</small>' + bar + '</div>';
+    }).join('') + '</div>');
+    // Erfolge
     var got = SI.ACH.filter(function (a) { return G.S.ach[a.k]; }).length;
-    h += '<div class="card"><h3>Erfolge <span class="hint num">' + got + ' / ' + SI.ACH.length + '</span></h3><div>' + SI.ACH.map(function (a) {
-      return '<div class="ach' + (G.S.ach[a.k] ? ' got' : '') + '"><span class="ic">' + ICON_STAR + '</span><div class="t">' + esc(a.n) + '<small>' + esc(a.d) + '</small></div></div>';
-    }).join('') + '</div></div>';
-    h += '<div class="card"><h3>Statistik</h3><div class="stats num"><span>Spielzeit</span><b>' + G.fmtTime(G.S.playtime) + '</b><span>Insgesamt verdient</span><b>' + fmt(G.S.total) + '</b>' +
-      '<span>Schafe</span><b>' + G.sheepCount() + '</b><span>Boxen geöffnet</span><b>' + G.S.stats.boxes + '</b><span>Babys gezüchtet</span><b>' + G.S.stats.breeds + '</b>' +
-      '<span>Wölfe verjagt</span><b>' + G.S.stats.wolves + '</b><span>Goldene Schafe</span><b>' + G.S.stats.golden + '</b><span>Geld verdienen</span><b>nur im Spiel</b></div></div>';
-    h += '<div class="card"><h3>Einstellungen</h3><p class="hint">Sprache wählen und Soundeffekte und Musik an- und ausschalten oder leiser machen.</p><button class="btn blue" data-act="sheet:settings">Einstellungen öffnen</button></div>';
-    h += '<div class="card"><h3>Als App aufs Handy</h3><p class="hint"><b>iPhone:</b> In Safari unten auf Teilen tippen, dann „Zum Home-Bildschirm“.<br><b>Android:</b> In Chrome oben rechts auf die drei Punkte, dann „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p></div>';
-    h += '<div class="card"><h3>Account</h3><p class="hint">Angemeldet als <b>' + esc(me ? me.username : '') + '</b>' + (N.online ? '. Dein Spielstand wird online gespeichert, du kannst auf jedem Gerät weiterspielen.' : '. Test-Modus: nur auf diesem Gerät gespeichert.') + '</p><button class="btn red" data-act="logout">Abmelden</button></div>';
+    h += msec('erfolge', 'Erfolge', '<span class="mbadge num">' + got + ' / ' + SI.ACH.length + '</span>', '<div class="bar"><i style="width:' + (got / SI.ACH.length * 100).toFixed(1) + '%"></i></div><div class="agrid">' +
+      SI.ACH.slice().sort(function (a, b) { return (G.S.ach[b.k] ? 1 : 0) - (G.S.ach[a.k] ? 1 : 0); }).map(function (a) {
+        return '<div class="ach' + (G.S.ach[a.k] ? ' got' : '') + '"><span class="ic">' + ICON_STAR + '</span><div class="t">' + esc(a.n) + '<small>' + esc(a.d) + '</small></div></div>';
+      }).join('') + '</div>');
+    // Statistik
+    h += msec('stats', 'Statistik', '', '<div class="mtiles st">' + mtile('⏱️', 'Spielzeit', G.fmtTime(G.S.playtime)) + mtile('💰', 'Insgesamt verdient', fmt(G.S.total)) +
+      mtile('🐑', 'Schafe', G.sheepCount()) + mtile('📦', 'Boxen geöffnet', G.S.stats.boxes) + mtile('💕', 'Babys gezüchtet', G.S.stats.breeds) +
+      mtile('🐺', 'Wölfe verjagt', G.S.stats.wolves) + mtile('✨', 'Goldene Schafe', G.S.stats.golden) + mtile('🏷️', 'Schafe verkauft', G.S.stats.sold || 0) + '</div><p class="hint">Geld verdienen: nur im Spiel</p>');
+    // Konto und Einstellungen
+    h += msec('konto', 'Konto und Einstellungen', '', '<div class="mrow"><div><b>Einstellungen</b><p class="hint">Sprache wählen und Soundeffekte und Musik an- und ausschalten oder leiser machen.</p></div><button class="btn blue" data-act="sheet:settings">Öffnen</button></div>' +
+      '<div class="mrow"><div><b>Als App aufs Handy</b><p class="hint"><b>iPhone:</b> In Safari unten auf Teilen tippen, dann „Zum Home-Bildschirm“.<br><b>Android:</b> In Chrome oben rechts auf die drei Punkte, dann „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p></div></div>' +
+      '<div class="mrow"><div><b>Account</b><p class="hint">Angemeldet als <b>' + esc(me ? me.username : '') + '</b>' + (N.online ? '. Dein Spielstand wird online gespeichert, du kannst auf jedem Gerät weiterspielen.' : '. Test-Modus: nur auf diesem Gerät gespeichert.') + '</p></div><button class="btn red" data-act="logout">Abmelden</button></div>');
     return { title: 'Mehr', html: h };
   };
   VIEWS.pen = function (i) {
@@ -550,6 +585,10 @@
     if (ex && !pull) h += '<div class="card"><h3>' + ex + ' Schaf' + (ex > 1 ? 'e warten' : ' wartet') + ' in der Scheune</h3><p class="hint">Alle Gehege sind voll. Baue ein neues Gehege, baue aus oder verkaufe die übrigen.</p>' +
       (fp >= 0 ? '<button class="btn" data-act="build:' + p.t + ':' + fp + '">Neues Gehege bauen</button>' : '') +
       '<button class="btn ghost" data-act="sellEx:' + p.t + '">' + ex + '× verkaufen · +' + fmt(ex * G.sellValue(p.t)) + '</button></div>';
+    var sv = G.sellValue(p.t), sn = [1, 5, 10].filter(function (n) { return n < p.n; });
+    h += '<div class="card sellcard"><h3>💰 Schafe verkaufen</h3><p class="hint">1 Schaf bringt <b class="num">+' + fmt(sv) + '</b> Münzen. Verkaufte Schafe sind für immer weg.</p><div class="sellbtns">' +
+      sn.map(function (n) { return '<button class="btn coin" data-act="sell:' + i + ':' + n + '">' + n + '× · +' + fmt(n * sv) + '</button>'; }).join('') +
+      '<button class="btn red" data-act="sell:' + i + ':' + p.n + '">Alle ' + p.n + '× · +' + fmt(p.n * sv) + '</button></div></div>';
     h += '<div class="row"><button class="btn blue" data-act="movePen:' + i + '">Gehege verschieben</button><span class="hint">Das Gehege zieht mit allen Schafen an einen anderen Platz.</span></div>';
     h += '<div class="row"><button class="btn ghost" data-act="demolish:' + i + '">Gehege abreißen</button><span class="hint">Die Schafe warten dann in der Scheune.</span></div>';
     return { title: t.pen.name, html: h };
@@ -847,7 +886,7 @@
     if (e.target.id === 'sheet') { closeSheet(); SFX('close'); return; }
     var el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
     var parts = el.dataset.act.split(':'), a = parts[0], arg = parts[1];
-    if (['open', 'again', 'deko', 'close', 'closeSheet', 'collect', 'claimDaily', 'rebirth', 'lvl', 'breed', 'sound', 'music', 'sheet', 'board', 'book', 'pick', 'unpick', 'sellEx', 'demolishYes'].indexOf(a) < 0) SFX(el.classList.contains('nb') ? 'tab' : 'click');
+    if (['open', 'again', 'deko', 'close', 'closeSheet', 'collect', 'claimDaily', 'rebirth', 'lvl', 'breed', 'sound', 'music', 'sheet', 'board', 'book', 'pick', 'unpick', 'sellEx', 'sell', 'sellYes', 'demolishYes', 'mjump'].indexOf(a) < 0) SFX(el.classList.contains('nb') ? 'tab' : 'click');
     var res, i, v;
     switch (a) {
       case 'ltab': setLMode(arg); break;
@@ -855,6 +894,7 @@
       case 'closeSheet': SFX('close'); closeSheet(); break;
       case 'sound': SI.sfx.setOn(!SI.sfx.on()); SFX('click'); renderSheet(); break;
       case 'settings': openSheet('settings'); break;
+      case 'mjump': var mj = document.getElementById('m-' + arg), bd = mj && mj.closest('.bd'); if (bd) { SFX('tab'); var nv = bd.querySelector('.mnav'); bd.scrollTo({ top: bd.scrollTop + mj.getBoundingClientRect().top - bd.getBoundingClientRect().top - (nv ? nv.offsetHeight + 8 : 0), behavior: 'smooth' }); } break;
       case 'lang': if ((arg === 'auto') !== SI.i18n.auto || (arg !== 'auto' && arg !== SI.i18n.lang)) { saveLocal(); SI.i18n.set(arg); } break;
       case 'nextTrack': SI.sfx.nextTrack(); toast('Das nächste Stück kommt gleich.'); break;
       case 'music': SI.sfx.setMusic(!SI.sfx.musicOn()); SFX('click'); renderSheet(); break;
@@ -904,6 +944,20 @@
         if (pn && G.levelUp(i)) { SFX('hammer'); setTimeout(function () { SFX('lvl'); }, 380); toast(T[pn.t].pen.name + ' ist jetzt Stufe ' + pn.lvl + '!'); saveLocal(); refresh(); }
         else if (pn) toast('Dir fehlen noch ' + fmt(G.lvlCost(pn.t, pn.lvl) - G.S.coins) + ' Münzen.');
         break;
+      case 'sell': case 'sellYes':
+        i = +arg; v = +parts[2]; var sp = G.S.pens[i]; if (!sp || !(v > 0)) break;
+        if (a === 'sellYes') nextModal();
+        if (G.sheepCount() - v < 1) { SFX('cant'); toast('Dein letztes Schaf kannst du nicht verkaufen.'); break; }
+        if (a === 'sell' && ('elms'.indexOf(T[sp.t].r) >= 0 || v >= sp.n)) {
+          modal('<div class="modal"><img src="' + A.sheepURL(T[sp.t]) + '" alt="" style="width:120px;height:106px;align-self:center"><h2>Wirklich verkaufen?</h2>' +
+            '<p><b>' + v + '× ' + esc(T[sp.t].n) + '</b> für <b class="num">+' + fmt(v * G.sellValue(sp.t)) + '</b> Münzen.</p><p class="hint">Verkaufte Schafe kommen nicht zurück.</p>' +
+            '<div class="btns"><button class="btn ghost" data-act="close">Abbrechen</button><button class="btn red" data-act="sellYes:' + i + ':' + v + '">Verkaufen</button></div></div>');
+          break;
+        }
+        var got = G.sellSheep(sp.t, v, i); if (got <= 0) break;
+        SFX('sell'); pop(innerWidth / 2, innerHeight / 2, '+' + fmt(got)); toast('Verkauft für ' + fmt(got) + ' Münzen');
+        if (G.S.pens[i]) renderSheet(); else closeSheet();
+        saveLocal(); refresh(); break;
       case 'sellEx': SFX('sell'); v = G.sellExtras(arg); toast('Verkauft für ' + fmt(v) + ' Münzen'); saveLocal(); refresh(); break;
       case 'demolish':
         modal('<div class="modal"><h2>Gehege abreißen?</h2><p>Die Schafe ziehen in die Scheune und verdienen dort nichts, bis sie wieder ein Gehege bekommen. Der Ausbau geht dabei verloren.</p>' +

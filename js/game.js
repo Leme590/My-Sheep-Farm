@@ -191,6 +191,23 @@
     if (keep > 0) G.S.sheep[t] = keep; else delete G.S.sheep[t];
     G.fixPens(); return v;
   };
+  // Schafe verkaufen (Kai): zuerst aus dem gewählten Gehege, wartende Schafe aus der Scheune rücken nach.
+  // Das allerletzte Schaf der Farm kann man nicht verkaufen (-1), sonst gäbe es kein Geld mehr.
+  G.sellSheep = function (t, n, i) {
+    var S = G.S, have = S.sheep[t] || 0; n = Math.min(n | 0, have); if (n <= 0) return 0;
+    if (G.sheepCount() - n < 1) return -1;
+    var p = i != null ? S.pens[i] : null; if (p && p.t !== t) p = null;
+    if (p) p.n -= Math.min(p.n, n);
+    if (have - n > 0) S.sheep[t] = have - n; else delete S.sheep[t];
+    var over = G.assigned(t) - (S.sheep[t] || 0);
+    G.pensOf(t).sort(function (a, b) { return S.pens[a].lvl - S.pens[b].lvl || S.pens[a].n - S.pens[b].n; })
+      .forEach(function (k) { if (over <= 0) return; var q = S.pens[k], m = Math.min(q.n, over); q.n -= m; over -= m; });
+    if (p && S.pens[i] === p && p.n < G.penCap(p.lvl)) p.n += Math.min(G.extras(t), G.penCap(p.lvl) - p.n);
+    S.pens.forEach(function (q, k) { if (q && q.t === t && q.n <= 0) S.pens[k] = null; });
+    G.fixPens();
+    var v = n * G.sellValue(t); G.earn(v); S.stats.sold = (S.stats.sold || 0) + n;
+    return v;
+  };
   G.sellAll = function (t) {
     var n = G.S.sheep[t] || 0; var v = n * G.sellValue(t); G.earn(v); delete G.S.sheep[t];
     G.pensOf(t).forEach(function (i) { G.S.pens[i] = null; });
