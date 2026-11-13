@@ -1033,5 +1033,7 @@ SI.LANG = {
   "Zurück": ["Back", "Retour", "Atrás"],
   "Weiter": ["Next", "Suivant", "Siguiente"],
   "Tutorial": ["Tutorial", "Tutoriel", "Tutorial"],
-  "Schäfer Wolle zeigt dir nochmal alles Wichtige.": ["Woolly the shepherd shows you all the important things again.", "Laineux le berger te remontre l'essentiel.", "Lanita la pastora te vuelve a enseñar lo importante."]
+  "Schäfer Wolle zeigt dir nochmal alles Wichtige.": ["Woolly the shepherd shows you all the important things again.", "Laineux le berger te remontre l'essentiel.", "Lanita la pastora te vuelve a enseñar lo importante."],
+  "1. Farbe (Wolle)": ["1st color (wool)", "1re couleur (laine)", "1.er color (lana)"],
+  "2. Farbe (Muster, Schopf und Decke)": ["2nd color (pattern, tuft and blanket)", "2e couleur (motif, houppe et couverture)", "2.º color (diseño, flequillo y manta)"]
 };

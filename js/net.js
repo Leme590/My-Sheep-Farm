@@ -567,7 +567,7 @@
       });
     }
   };
-  function racerOk(r) { r = r || {}; var f = function (v, mx) { v = parseInt(v, 10); return isNaN(v) ? 0 : Math.max(0, Math.min(mx, v)); }; return { col: f(r.col, 15), pat: f(r.pat, 7), acc: f(r.acc, 15) }; }
+  function racerOk(r) { r = r || {}; var f = function (v, mx) { v = parseInt(v, 10); return isNaN(v) ? 0 : Math.max(0, Math.min(mx, v)); }; var o = { col: f(r.col, 15), pat: f(r.pat, 7), acc: f(r.acc, 15) }; if (r.col2 != null) o.col2 = f(r.col2, 15); return o; }
 
   /* ---------- Schafrennen (freitags) ---------- */
   function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }

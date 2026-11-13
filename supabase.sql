@@ -820,9 +820,10 @@ begin
   return jsonb_build_object(
     'col', least(greatest(coalesce((c->>'col')::int, 0), 0), 15),
     'pat', least(greatest(coalesce((c->>'pat')::int, 0), 0), 7),
-    'acc', least(greatest(coalesce((c->>'acc')::int, 0), 0), 15));
+    'acc', least(greatest(coalesce((c->>'acc')::int, 0), 0), 15),
+    'col2', least(greatest(coalesce((c->>'col2')::int, 4), 0), 15));  -- zweite Farbe (Teil 8)
 exception when others then
-  return '{"col":0,"pat":0,"acc":0}'::jsonb;
+  return '{"col":0,"pat":0,"acc":0,"col2":4}'::jsonb;
 end $$;
 
 create or replace function public.sp_club_racer(p_token uuid, p_racer jsonb)
