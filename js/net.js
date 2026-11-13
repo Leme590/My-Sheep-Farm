@@ -73,6 +73,12 @@
   // Prüfsumme des Admin-Codes (der Code selbst steht nirgends im Spiel)
   var ADMIN_SUM = 'd22f5a05d40751a81c50694b17854a8dcdc973469d4cf72434706b695cb3072a';
   function uid() { return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }); }
+  // Schlüssel eines Accounts zum Namen (nach einer Namensänderung passt der alte Schlüssel nicht mehr zum Namen)
+  function keyOf(a, name) {
+    var n = String(name || '').trim().toLowerCase(); if (!n) return n;
+    for (var k in a) if (String(a[k].username).toLowerCase() === n) return k;
+    return a[n] && String(a[n].username).toLowerCase() === n ? n : n + '#';
+  }
   var LOCAL = {
     all: function () { return lsGet('schaf_accounts', {}); },
     put: function (a) { lsSet('schaf_accounts', a); },
@@ -80,7 +86,7 @@
       if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) return Promise.reject(new Error('name_invalid'));
       if (pw.length < 4) return Promise.reject(new Error('pass_short'));
       var a = LOCAL.all();
-      if (a[name.toLowerCase()]) return Promise.reject(new Error('name_taken'));
+      if (a[name.toLowerCase()] || a[keyOf(a, name)]) return Promise.reject(new Error('name_taken'));
       return hashPw(name, pw).then(function (h) {
         var tok = uid();
         a[name.toLowerCase()] = { username: name, hash: h, token: tok, save: null, income: 0, playtime: 0, rebirths: 0 };
@@ -89,9 +95,9 @@
       });
     },
     login: function (name, pw) {
-      var a = LOCAL.all(), acc = a[(name || '').toLowerCase()];
+      var a = LOCAL.all(), key = keyOf(a, name), acc = a[key];
       if (!acc) return Promise.reject(new Error('login_failed'));
-      return hashPw(acc.username, pw).then(function (h) {
+      return hashPw(key, pw).then(function (h) {
         if (h !== acc.hash) throw new Error('login_failed');
         return { token: acc.token, username: acc.username };
       });
@@ -127,7 +133,7 @@
     adminGive: function (tok, target, amount) {
       try { LOCAL.isAdmin(tok); } catch (e) { return Promise.reject(e); }
       if (!(amount > 0) || amount > 1e30) return Promise.reject(new Error('bad_amount'));
-      var a = LOCAL.all(), t = a[(target || '').trim().toLowerCase()], me = LOCAL.find(tok);
+      var a = LOCAL.all(), t = a[keyOf(a, target)], me = LOCAL.find(tok);
       if (!t) return Promise.reject(new Error('no_player'));
       t.inbox = (t.inbox || []).concat([{ type: 'money', amount: amount, from: me.a[me.k].username }]); LOCAL.put(a);
       return Promise.resolve(true);
@@ -163,6 +169,18 @@
     name = (name || '').trim();
     if (!ONLINE) return LOCAL.register(name, pw);
     return rpc('sp_register', { p_name: name, p_pass: pw });
+  };
+  // Spielername ändern (Code ChangeNameTag)
+  N.rename = function (tok, name) {
+    name = (name || '').trim();
+    if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) return Promise.reject(new Error('name_invalid'));
+    if (ONLINE) return rpc('sp_rename', { p_token: tok, p_name: name });
+    var a = LOCAL.all(), f = LOCAL.find(tok), low = name.toLowerCase();
+    if (!f) return Promise.reject(new Error('bad_token'));
+    if (low === N.BOT.toLowerCase()) return Promise.reject(new Error('name_taken'));
+    for (var k in a) if (k !== f.k && (k === low || String(a[k].username).toLowerCase() === low)) return Promise.reject(new Error('name_taken'));
+    f.a[f.k].username = name; LOCAL.put(f.a);
+    return Promise.resolve({ username: name });
   };
   N.login = function (name, pw) {
     name = (name || '').trim();
@@ -334,7 +352,7 @@
     invite: function (tok, target) {
       return lp(function () {
         var k = DL.me(tok), list = DL.all(), t = (target || '').trim().toLowerCase();
-        if (t === N.BOT.toLowerCase()) t = 'bot'; else if (!LOCAL.all()[t]) throw new Error('no_player');
+        if (t === N.BOT.toLowerCase()) t = 'bot'; else { t = keyOf(LOCAL.all(), t); if (!LOCAL.all()[t]) throw new Error('no_player'); }
         if (t === k) throw new Error('duel_self');
         list.forEach(DL.tick);
         if (DL.busy(list, k)) throw new Error('duel_busy_me');
@@ -409,6 +427,7 @@
         return (names || []).slice(0, 50).map(function (n) {
           var k = String(n).toLowerCase();
           if (k === N.BOT.toLowerCase()) return { username: N.BOT, online: true };
+          k = keyOf(a, k);
           return a[k] ? { username: a[k].username, online: (a[k].seen || 0) > now - 45000 } : null;
         }).filter(Boolean);
       });
@@ -443,6 +462,7 @@
     visit: function (tok, name) {
       var f = LOCAL.find(tok); if (!f) return Promise.reject(new Error('bad_token'));
       var k = String(name || '').trim().toLowerCase(), meK = f.k;
+      if (k !== N.BOT.toLowerCase()) k = keyOf(f.a, k);
       if (k === N.BOT.toLowerCase()) { var bh = lsGet('schaf_bothearts', {}); return Promise.resolve({ username: N.BOT, save: botFarm(), hearts: bh.n || 0, liked: bh[meK] === dayKey(), income: 0, me: false }); }
       var acc = f.a[k]; if (!acc) return Promise.reject(new Error('no_player'));
       return Promise.resolve({ username: acc.username, save: farmPart(acc.save), hearts: acc.hearts || 0, liked: (acc.heartsBy || {})[meK] === dayKey(), income: acc.income || 0, me: k === meK });
@@ -450,6 +470,7 @@
     heart: function (tok, name) {
       var f = LOCAL.find(tok); if (!f) return Promise.reject(new Error('bad_token'));
       var k = String(name || '').trim().toLowerCase(), meK = f.k;
+      if (k !== N.BOT.toLowerCase()) k = keyOf(f.a, k);
       if (k === meK) return Promise.reject(new Error('heart_self'));
       if (k === N.BOT.toLowerCase()) {
         var bh = lsGet('schaf_bothearts', {}); if (bh[meK] === dayKey()) return Promise.reject(new Error('heart_done'));

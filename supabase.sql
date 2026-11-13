@@ -907,3 +907,21 @@ grant execute on function public.sp_club_racer(uuid, jsonb) to anon;
 grant execute on function public.sp_race_add(uuid, int) to anon;
 grant execute on function public.sp_race_board(uuid) to anon;
 grant execute on function public.sp_race_claim(uuid) to anon;
+
+-- ===================== Spielernamen ändern mit dem Code ChangeNameTag (Teil 7) =====================
+-- Alles andere (Clubs, Duelle, Herzen, Rennen) hängt an der Spieler-ID, deshalb reicht es, den Namen zu ändern.
+-- Das Passwort bleibt gleich (bcrypt hängt nicht am Namen).
+create or replace function public.sp_rename(p_token uuid, p_name text)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players;
+begin
+  select * into me from players where token = p_token;
+  if me.id is null then raise exception 'bad_token'; end if;
+  p_name := trim(coalesce(p_name, ''));
+  if p_name !~ '^[A-Za-z0-9_]{3,16}$' then raise exception 'name_invalid'; end if;
+  if exists (select 1 from players where lower(username) = lower(p_name) and id <> me.id) then raise exception 'name_taken'; end if;
+  update players set username = p_name where id = me.id;
+  return json_build_object('username', p_name);
+end $$;
+
+grant execute on function public.sp_rename(uuid, text) to anon;

@@ -534,7 +534,7 @@
     h += '<div class="card"><h3>Statistik</h3><div class="stats num"><span>Spielzeit</span><b>' + G.fmtTime(G.S.playtime) + '</b><span>Insgesamt verdient</span><b>' + fmt(G.S.total) + '</b>' +
       '<span>Schafe</span><b>' + G.sheepCount() + '</b><span>Boxen geöffnet</span><b>' + G.S.stats.boxes + '</b><span>Babys gezüchtet</span><b>' + G.S.stats.breeds + '</b>' +
       '<span>Wölfe verjagt</span><b>' + G.S.stats.wolves + '</b><span>Goldene Schafe</span><b>' + G.S.stats.golden + '</b><span>Geld verdienen</span><b>nur im Spiel</b></div></div>';
-    h += '<div class="card"><h3>Einstellungen</h3><p class="hint">Soundeffekte und Musik an- und ausschalten oder leiser machen.</p><button class="btn blue" data-act="sheet:settings">Einstellungen öffnen</button></div>';
+    h += '<div class="card"><h3>Einstellungen</h3><p class="hint">Sprache wählen und Soundeffekte und Musik an- und ausschalten oder leiser machen.</p><button class="btn blue" data-act="sheet:settings">Einstellungen öffnen</button></div>';
     h += '<div class="card"><h3>Als App aufs Handy</h3><p class="hint"><b>iPhone:</b> In Safari unten auf Teilen tippen, dann „Zum Home-Bildschirm“.<br><b>Android:</b> In Chrome oben rechts auf die drei Punkte, dann „App installieren“ oder „Zum Startbildschirm hinzufügen“.</p></div>';
     h += '<div class="card"><h3>Account</h3><p class="hint">Angemeldet als <b>' + esc(me ? me.username : '') + '</b>' + (N.online ? '. Dein Spielstand wird online gespeichert, du kannst auf jedem Gerät weiterspielen.' : '. Test-Modus: nur auf diesem Gerät gespeichert.') + '</p><button class="btn red" data-act="logout">Abmelden</button></div>';
     return { title: 'Mehr', html: h };
@@ -546,7 +546,7 @@
     h += '<div class="card"><div class="stats num"><span>Schafe im Gehege</span><b>' + p.n + ' / ' + cap + '</b>' + (mine.length > 1 ? '<span>Gehege mit ' + esc(t.n) + '</span><b>' + mine.length + ' Stück</b>' : '') + '<span>Stufe</span><b>' + p.lvl + ' / ' + G.MAXLVL + '</b>' +
       '<span>Gehege-Bonus</span><b>×' + G.penMult(p.lvl).toLocaleString('de-DE') + '</b><span>Nächste Stufe</span><b>' + (p.lvl < G.MAXLVL ? '+1 Platz, +25 % Geld, neues Aussehen' : '—') + '</b><span>Dieses Gehege macht</span><b id="penInc">+' + fmt(G.penIncome(i) * G.globalMult()) + ' pro Sek.</b></div>' +
       (p.lvl < G.MAXLVL ? costBtn(G.lvlCost(p.t, p.lvl), 'lvl:' + i, 'Ausbauen', 'go') : '<p class="hint">Höchste Stufe erreicht!</p>') + '</div>';
-    if (pull) h += '<div class="card"><h3>Hier ist Platz frei!</h3><p class="hint">' + (ex ? 'Es warten noch Schafe in der Scheune' : 'In deinem anderen ' + (mine.length > 2 ? 'Gehegen' : 'Gehege') + ' sind noch ' + esc(t.n) + 'e') + '. Hol sie hierher, dann verdienen sie mehr. Ein Gehege, das leer wird, wird abgebaut und der Platz ist wieder frei.</p><button class="btn go" data-act="pull:' + i + '">' + pull + '× hierher holen</button></div>';
+    if (pull) h += '<div class="card"><h3>Hier ist Platz frei!</h3><p class="hint">' + (ex ? 'Es warten noch Schafe in der Scheune' : (mine.length > 2 ? 'In deinen anderen Gehegen' : 'In deinem anderen Gehege') + ' sind noch ' + esc(t.n) + 'e') + '. Hol sie hierher, dann verdienen sie mehr. Ein Gehege, das leer wird, wird abgebaut und der Platz ist wieder frei.</p><button class="btn go" data-act="pull:' + i + '">' + pull + '× hierher holen</button></div>';
     if (ex && !pull) h += '<div class="card"><h3>' + ex + ' Schaf' + (ex > 1 ? 'e warten' : ' wartet') + ' in der Scheune</h3><p class="hint">Alle Gehege sind voll. Baue ein neues Gehege, baue aus oder verkaufe die übrigen.</p>' +
       (fp >= 0 ? '<button class="btn" data-act="build:' + p.t + ':' + fp + '">Neues Gehege bauen</button>' : '') +
       '<button class="btn ghost" data-act="sellEx:' + p.t + '">' + ex + '× verkaufen · +' + fmt(ex * G.sellValue(p.t)) + '</button></div>';
@@ -581,7 +581,10 @@
         '<button class="switch' + (onv ? ' on ' + col : '') + '" data-act="' + act + '" role="switch" aria-checked="' + onv + '" aria-label="' + title + '"><i></i></button></div>' +
         '<div class="slider"><span>Leise</span><input type="range" min="0" max="100" value="' + Math.round(val * 100) + '" data-slide="' + slAct + '"' + (onv ? '' : ' disabled') + ' aria-label="Lautstärke ' + title + '"><span>Laut</span></div></div>';
     }
-    var h = row('Soundeffekte', 'Kisten, Knöpfe, Tiere, Vögel und Grillen', 'sound', so, 'sfx', X.sfxVol(), 'blue') +
+    var I = SI.i18n, h = '<div class="card"><h3>🌍 Sprache</h3><p class="hint">Normalerweise nimmt das Spiel die Sprache von deinem Gerät.</p><div class="seg langseg">' +
+      '<button class="' + (I.auto ? 'on' : '') + '" data-act="lang:auto">Automatisch <small data-notr>(' + I.names[I.device] + ')</small></button>' +
+      I.codes.map(function (c) { return '<button class="' + (!I.auto && I.lang === c ? 'on' : '') + '" data-act="lang:' + c + '" data-notr>' + I.names[c] + '</button>'; }).join('') + '</div></div>';
+    h += row('Soundeffekte', 'Kisten, Knöpfe, Tiere, Vögel und Grillen', 'sound', so, 'sfx', X.sfxVol(), 'blue') +
       row('Hintergrundmusik', 'Ruhige Musik, nachts noch etwas leiser', 'music', mu, 'mus', X.musVol(), 'purple');
     h += '<div class="card"><div class="sethd"><div><h3>Musikstücke</h3><p class="hint">3 ruhige Stücke laufen zufällig nacheinander: Wiesenmorgen, Lagerfeuer und Sonntagswalzer. Gerade: <b id="trackName">' + esc(X.trackName()) + '</b></p></div><button class="btn purple" data-act="nextTrack"' + (mu ? '' : ' disabled') + '>Nächstes</button></div></div>';
     h += '<p class="hint">Die Einstellungen werden auf diesem Gerät gespeichert.</p>';
@@ -664,6 +667,8 @@
   };
   function doRedeem() {
     var c = codeIn.trim(); if (!c) { toast('Bitte gib zuerst einen Code ein.'); return; }
+    // Fester Code für alle: Spielername ändern (Kai). Geht beliebig oft und braucht keinen Server-Code.
+    if (c.replace(/\s+/g, '').toLowerCase() === 'changenametag') { codeIn = ''; closeSheet(); renameModal(); return; }
     busy = true; renderSheet();
     N.redeem(me.token, c).then(function (r) {
       codeIn = '';
@@ -687,6 +692,32 @@
       saveLocal(); saveCloud(); refresh();
     }).catch(function (e) { SFX('cant'); toast(N.errText(e)); })
       .then(function () { busy = false; if (sheet) renderSheet(); });
+  }
+  function renameModal() {
+    SFX('reveal', 'e');
+    modal('<div class="modal rnm"><img src="' + A.sheepURL(T.wiese) + '" alt="" style="width:110px;height:96px;align-self:center"><h2>Neuer Name</h2>' +
+      '<p>Wie willst du ab jetzt heißen? Deine Farm, dein Club und deine Erfolge bleiben. Zum Anmelden nimmst du danach den neuen Namen, das Passwort bleibt gleich.</p>' +
+      '<label class="field">Neuer Spielername<input id="rnIn" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" value="' + esc(me.username) + '"></label>' +
+      '<p class="hint">3 bis 16 Zeichen: Buchstaben, Zahlen und _</p><p class="err" id="rnErr"></p>' +
+      '<div class="btns"><button class="btn" data-act="close">Abbrechen</button><button class="btn go" data-act="renameGo">Namen ändern</button></div></div>', function (ov) {
+      var i = ov.querySelector('#rnIn');
+      i.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); doRename(); } });
+      setTimeout(function () { i.focus(); i.select(); }, 60);
+    });
+  }
+  function doRename() {
+    var inp = $('#rnIn'), btn = $('#overlay [data-act="renameGo"]'), er = $('#rnErr'); if (!inp || (btn && btn.disabled)) return;
+    var nm = inp.value.trim();
+    if (nm === me.username) { closeModal(); return; }
+    if (btn) btn.disabled = true;
+    N.rename(me.token, nm).then(function (r) {
+      var oldKey = backupKey();
+      me.username = r.username; N.setSession({ token: me.token, username: me.username });
+      try { localStorage.removeItem(oldKey); } catch (e) { /* egal */ }
+      F.farmName = me.username + 's Farm'; adm.name = '';
+      saveLocal(); saveCloud(); closeModal();
+      SFX('trumpet'); flash('#ffe066'); toast('Du heißt jetzt ' + me.username + '!');
+    }).catch(function (e) { SFX('cant'); if (er) er.textContent = N.errText(e); if (btn) btn.disabled = false; });
   }
   function doAdminGive() {
     var amt = parseAmt(adm.amount), who = adm.name.trim();
@@ -824,6 +855,7 @@
       case 'closeSheet': SFX('close'); closeSheet(); break;
       case 'sound': SI.sfx.setOn(!SI.sfx.on()); SFX('click'); renderSheet(); break;
       case 'settings': openSheet('settings'); break;
+      case 'lang': if ((arg === 'auto') !== SI.i18n.auto || (arg !== 'auto' && arg !== SI.i18n.lang)) { saveLocal(); SI.i18n.set(arg); } break;
       case 'nextTrack': SI.sfx.nextTrack(); toast('Das nächste Stück kommt gleich.'); break;
       case 'music': SI.sfx.setMusic(!SI.sfx.musicOn()); SFX('click'); renderSheet(); break;
       case 'board': openSheet('board'); break;
@@ -849,6 +881,7 @@
       case 'editDeko': closeSheet(); setMode('edit'); break;
       case 'modeDone': setMode('normal'); break;
       case 'redeem': doRedeem(); break;
+      case 'renameGo': doRename(); break;
       case 'adminGive': doAdminGive(); break;
       case 'adminCode': doAdminCode(); break;
       case 'admQuick': adm.amount = arg; renderSheet(); break;

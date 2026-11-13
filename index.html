@@ -14,6 +14,8 @@
 </head>
 <body>
 <!--APP-START-->
+<script src="js/lang.js"></script>
+<script src="js/i18n.js"></script>
 <title>Schaf-Imperium</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -571,10 +573,12 @@ body.quake #overlay{animation:quake .6s ease-out}
 .sheet[data-kind="code"] .box{--sc:#4cc93a;--sc2:#2e9a22}
 .sheet[data-kind="admin"] .box{--sc:#e8402e;--sc2:#a82018}
 .field{display:flex;flex-direction:column;gap:4px;font-weight:800;font-size:13px;color:var(--muted)}
+.rnm .field{text-align:left}.rnm .hint{margin:0}
 .field input,.field select{font:inherit;font-size:16px;color:var(--ink);padding:10px 12px;border:2.5px solid var(--out);border-radius:12px;background:#fff;box-shadow:inset 0 2px 0 rgba(0,0,0,.08);width:100%;min-width:0}
 .codein{font-family:var(--display)!important;font-size:22px!important;text-align:center;letter-spacing:.06em}
 .seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:6px}
 .seg button{border:2.5px solid var(--out);border-radius:12px;background:#fff;padding:8px;font-family:var(--display);font-size:15px;color:var(--ink);box-shadow:0 3px 0 var(--out)}
+.langseg{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}.langseg small{display:block;font-size:11px;opacity:.8}
 .seg button.on{background:linear-gradient(#ff6f6f,#d0302a);color:#fff;text-shadow:var(--ts-s);transform:translateY(2px);box-shadow:0 1px 0 var(--out)}
 .codelist{display:flex;flex-direction:column;gap:6px}
 .codelist .li{padding:8px 10px}
