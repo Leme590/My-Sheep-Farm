@@ -310,40 +310,104 @@
     ctx.restore();
   };
 
-  /* ---------- Verlorene Artefakte ---------- */
+  /* ---------- Verlorene Artefakte (Kai: 100 mal cooler) ---------- */
+  function lgr(g, x0, y0, x1, y1, st) { var f = g.createLinearGradient(x0, y0, x1, y1); st.forEach(function (c, i) { f.addColorStop(i / (st.length - 1), c); }); return f; }
+  function rgr(g, x, y, r, st) { var f = g.createRadialGradient(x - r * 0.3, y - r * 0.35, r * 0.05, x, y, r); st.forEach(function (c, i) { f.addColorStop(i / (st.length - 1), c); }); return f; }
+  var GOLD = ['#fff6b0', '#ffd23f', '#e09a10', '#a8600a'];
+  function gold(g, y0, y1) { return lgr(g, 0, y0, 0, y1, GOLD); }
+  // geschliffener Edelstein: Achteck mit Facetten in hell, mittel und dunkel
+  function facet(g, x, y, r, c, n) {
+    n = n || 8; var p = [], q = [];
+    for (var i = 0; i < n; i++) { var a = i / n * TAU - Math.PI / 2 + Math.PI / n; p.push([x + Math.cos(a) * r, y + Math.sin(a) * r]); q.push([x + Math.cos(a) * r * 0.55, y + Math.sin(a) * r * 0.55]); }
+    g.beginPath(); p.forEach(function (v, i) { if (i) g.lineTo(v[0], v[1]); else g.moveTo(v[0], v[1]); }); g.closePath(); sfill(g, c[1], 1.3);
+    for (i = 0; i < n; i++) {
+      var j = (i + 1) % n; g.beginPath(); g.moveTo(p[i][0], p[i][1]); g.lineTo(p[j][0], p[j][1]); g.lineTo(q[j][0], q[j][1]); g.lineTo(q[i][0], q[i][1]); g.closePath();
+      g.fillStyle = i < n * 0.4 ? c[0] : i < n * 0.7 ? c[1] : c[2]; g.fill();
+    }
+    g.beginPath(); q.forEach(function (v, i) { if (i) g.lineTo(v[0], v[1]); else g.moveTo(v[0], v[1]); }); g.closePath(); g.fillStyle = rgr(g, x, y, r * 0.55, ['#ffffff', c[0], c[1]]); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,.25)'; g.lineWidth = 0.5; for (i = 0; i < n; i++) { g.beginPath(); g.moveTo(p[i][0], p[i][1]); g.lineTo(q[i][0], q[i][1]); g.stroke(); }
+    g.fillStyle = 'rgba(255,255,255,.9)'; star4(g, x - r * 0.3, y - r * 0.3, r * 0.32);
+  }
+  function star4(g, x, y, s) { g.beginPath(); g.moveTo(x, y - s); g.lineTo(x + s * 0.25, y - s * 0.25); g.lineTo(x + s, y); g.lineTo(x + s * 0.25, y + s * 0.25); g.lineTo(x, y + s); g.lineTo(x - s * 0.25, y + s * 0.25); g.lineTo(x - s, y); g.lineTo(x - s * 0.25, y - s * 0.25); g.closePath(); g.fill(); }
+  function rays(g, x, y, r1, r2, n, col, w) { for (var i = 0; i < n; i++) { var a = i / n * TAU; g.beginPath(); g.moveTo(x + Math.cos(a - w) * r1, y + Math.sin(a - w) * r1); g.lineTo(x + Math.cos(a) * r2, y + Math.sin(a) * r2); g.lineTo(x + Math.cos(a + w) * r1, y + Math.sin(a + w) * r1); g.closePath(); sfill(g, typeof col === 'function' ? col(i) : col, 1.1); } }
+  var RUBY = ['#ffb0a8', '#e8221e', '#7a0608'], SAPH = ['#b8e8ff', '#2f7fe8', '#0c2a7a'], TOPAZ = ['#fff6b0', '#ffc21a', '#b86a00'], EMER = ['#c8ffd8', '#18c060', '#05502a'];
   function artDraw(g, k) {
-    if (k === 'auge') { // Smaragd-Auge in goldener Fassung
-      g.beginPath(); g.ellipse(0, -22, 20, 13, 0, 0, TAU); sfill(g, '#e8b030', 2);
-      g.beginPath(); g.ellipse(0, -22, 15, 9, 0, 0, TAU); sfill(g, '#ffffff', 1.4);
-      var gr = g.createRadialGradient(-2, -25, 1, 0, -22, 8); gr.addColorStop(0, '#ffc2b8'); gr.addColorStop(0.5, '#ff3a2e'); gr.addColorStop(1, '#8a0f12');
-      g.beginPath(); g.arc(0, -22, 8, 0, TAU); g.fillStyle = gr; g.fill(); g.strokeStyle = OUT; g.lineWidth = 1.4; g.stroke();
-      g.fillStyle = '#3a0406'; ell(g, 0, -22, 2.4, 5.6); g.fillStyle = '#fff'; circ(g, -3, -25, 1.8);
-      [[-22, -22], [22, -22], [0, -37], [0, -7]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], 2.6, 0, TAU); sfill(g, '#ff6a5a', 1); });
-    } else if (k === 'maske') { // Uralte Schafsmaske aus Holz
-      g.beginPath(); g.moveTo(-16, -40); g.quadraticCurveTo(0, -48, 16, -40); g.quadraticCurveTo(20, -18, 0, -2); g.quadraticCurveTo(-20, -18, -16, -40); g.closePath(); sfill(g, '#2f7fe8', 2);
-      g.beginPath(); g.ellipse(-20, -36, 7, 4, -0.5, 0, TAU); sfill(g, '#1d5ab8', 1.4); g.beginPath(); g.ellipse(20, -36, 7, 4, 0.5, 0, TAU); sfill(g, '#1d5ab8', 1.4);
-      blob(g, [[-10, -44, 5], [0, -47, 6], [10, -44, 5]], '#f4ecd6', 1.6);
-      g.fillStyle = '#2a1a0a'; poly(g, [-11, -30, -4, -28, -6, -24, -11, -25]); poly(g, [11, -30, 4, -28, 6, -24, 11, -25]);
-      g.fillStyle = '#9ff0ff'; circ(g, -7.5, -27, 1.4); circ(g, 7.5, -27, 1.4);
-      line(g, [-8, -16, 0, -12, 8, -16], '#2a1a0a', 1.6);
-      g.fillStyle = '#ffd23f'; g.fillRect(-12, -36, 24, 2.2); g.fillStyle = '#9ff0ff'; g.fillRect(-9, -20, 18, 1.8);
-    } else if (k === 'krone') { // Jaguar-Krone
-      g.beginPath(); g.moveTo(-22, -6); g.lineTo(-24, -34); g.lineTo(-13, -22); g.lineTo(-6, -40); g.lineTo(0, -26); g.lineTo(6, -40); g.lineTo(13, -22); g.lineTo(24, -34); g.lineTo(22, -6); g.closePath(); sfill(g, '#ffcc22', 2);
-      g.fillStyle = '#c8801a'; [[-14, -12], [-4, -16], [8, -12], [16, -18], [0, -9], [-18, -22]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], 2.4, 0, TAU); g.fill(); });
-      g.fillStyle = '#5a3a10'; [[-14, -12], [-4, -16], [8, -12], [16, -18], [0, -9]].forEach(function (p) { circ(g, p[0], p[1], 1); });
-      g.beginPath(); rrect(g, -23, -8, 46, 7, 2); sfill(g, '#e8b030', 1.4);
-      [[-6, -40], [6, -40], [-24, -34], [24, -34]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], 2.4, 0, TAU); sfill(g, '#fff27a', 1); });
-    } else { // Sonnen-Amulett
-      line(g, [-14, -46, 0, -36, 14, -46], '#c8a040', 1.8);
-      for (var i = 0; i < 12; i++) { g.save(); g.translate(0, -20); g.rotate(i / 12 * TAU); g.beginPath(); g.moveTo(11, -3.5); g.lineTo(19, 0); g.lineTo(11, 3.5); g.closePath(); sfill(g, i % 2 ? '#14a845' : '#5ff09a', 1.1); g.restore(); }
-      g.beginPath(); g.arc(0, -20, 12, 0, TAU); sfill(g, '#2fd08a', 1.8);
-      g.beginPath(); g.arc(0, -20, 8, 0, TAU); sfill(g, '#a8ffd0', 1.2);
-      g.fillStyle = '#0a4a24'; circ(g, -3, -22, 1.2); circ(g, 3, -22, 1.2); line(g, [-3, -17, 0, -15.5, 3, -17], '#0a4a24', 1.2);
+    var cy = -26;
+    if (k === 'auge') { // Rubin-Auge: goldene Sonnenscheibe mit Flammenflügeln und einem lebendigen Rubin-Auge
+      rays(g, 0, cy, 17, 29, 12, function (i) { return i % 2 ? '#c8401a' : '#ff6a3a'; }, 0.16);
+      [-1, 1].forEach(function (s) { // Flügel
+        g.beginPath(); g.moveTo(s * 18, cy - 4); g.bezierCurveTo(s * 30, cy - 18, s * 34, cy - 4, s * 29, cy + 2); g.bezierCurveTo(s * 33, cy + 6, s * 28, cy + 14, s * 18, cy + 6); g.closePath(); sfill(g, lgr(g, s * 18, cy - 10, s * 32, cy + 10, ['#ffd23f', '#ff7a1a', '#c8201a']), 1.5);
+        line(g, [s * 21, cy - 2, s * 28, cy - 6], 'rgba(120,20,0,.6)', 1); line(g, [s * 21, cy + 3, s * 28, cy + 4], 'rgba(120,20,0,.6)', 1);
+      });
+      g.beginPath(); g.arc(0, cy, 19, 0, TAU); sfill(g, gold(g, cy - 19, cy + 19), 2);
+      g.strokeStyle = '#a8600a'; g.lineWidth = 1; for (var i = 0; i < 24; i++) { var a = i / 24 * TAU; g.beginPath(); g.moveTo(Math.cos(a) * 15.5, cy + Math.sin(a) * 15.5); g.lineTo(Math.cos(a) * 18, cy + Math.sin(a) * 18); g.stroke(); }
+      g.beginPath(); g.moveTo(-15, cy); g.quadraticCurveTo(0, cy - 15, 15, cy); g.quadraticCurveTo(0, cy + 15, -15, cy); g.closePath(); sfill(g, rgr(g, 0, cy, 15, ['#ffffff', '#f2e8d8', '#c8b090']), 1.5);
+      g.save(); g.clip();
+      g.beginPath(); g.arc(0, cy, 9, 0, TAU); g.fillStyle = rgr(g, 0, cy, 9, ['#ffd0c8', '#ff3a2e', '#a80c10', '#3a0004']); g.fill(); g.strokeStyle = OUT; g.lineWidth = 1.2; g.stroke();
+      g.strokeStyle = 'rgba(255,200,120,.6)'; g.lineWidth = 0.6; for (i = 0; i < 16; i++) { a = i / 16 * TAU; g.beginPath(); g.moveTo(Math.cos(a) * 3.5, cy + Math.sin(a) * 3.5); g.lineTo(Math.cos(a) * 8, cy + Math.sin(a) * 8); g.stroke(); }
+      g.fillStyle = '#1a0002'; ell(g, 0, cy, 2.2, 7);
+      g.fillStyle = 'rgba(255,255,255,.95)'; circ(g, -3.5, cy - 3.5, 2.2); circ(g, 3, cy + 3, 0.9);
+      g.restore();
+      g.strokeStyle = OUT; g.lineWidth = 1.5; g.beginPath(); g.moveTo(-15, cy); g.quadraticCurveTo(0, cy - 15, 15, cy); g.stroke();
+      [[0, cy - 19], [0, cy + 19], [-19, cy], [19, cy]].forEach(function (p) { facet(g, p[0], p[1], 3.6, RUBY, 6); });
+      facet(g, 0, cy - 30, 4.5, RUBY);
+    } else if (k === 'maske') { // Saphir-Maske: Widder-Maske aus Saphir mit Goldhörnern und leuchtenden Augen
+      [-1, 1].forEach(function (s) { // Hörner
+        g.beginPath(); g.moveTo(s * 10, cy - 14); g.bezierCurveTo(s * 30, cy - 26, s * 34, cy + 4, s * 22, cy + 6); g.bezierCurveTo(s * 14, cy + 6, s * 14, cy - 4, s * 21, cy - 4);
+        g.bezierCurveTo(s * 25, cy - 4, s * 25, cy - 12, s * 18, cy - 12); g.closePath(); sfill(g, lgr(g, 0, cy - 24, 0, cy + 8, GOLD), 1.6);
+        g.strokeStyle = 'rgba(140,80,0,.55)'; g.lineWidth = 0.9; [0.3, 0.5, 0.7].forEach(function (t) { g.beginPath(); g.arc(s * 22, cy - 6, 6 + t * 6, 0, TAU); g.stroke(); });
+      });
+      g.beginPath(); g.moveTo(-14, cy - 16); g.quadraticCurveTo(0, cy - 24, 14, cy - 16); g.quadraticCurveTo(18, cy + 6, 0, cy + 24); g.quadraticCurveTo(-18, cy + 6, -14, cy - 16); g.closePath();
+      sfill(g, lgr(g, -14, cy - 20, 14, cy + 24, ['#7fd0ff', '#2f7fe8', '#1a3fa8', '#0c1f5a']), 2);
+      g.save(); g.clip(); g.fillStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.moveTo(-14, cy - 18); g.lineTo(-4, cy - 18); g.lineTo(-12, cy + 10); g.lineTo(-18, cy + 4); g.closePath(); g.fill(); g.restore();
+      g.strokeStyle = '#ffd23f'; g.lineWidth = 1.3; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(0, cy - 6); g.lineTo(0, cy + 18); g.moveTo(-8, cy + 8); g.lineTo(-3, cy + 14); g.moveTo(8, cy + 8); g.lineTo(3, cy + 14); g.moveTo(-11, cy - 2); g.quadraticCurveTo(-6, cy + 2, -10, cy + 6); g.moveTo(11, cy - 2); g.quadraticCurveTo(6, cy + 2, 10, cy + 6); g.stroke();
+      blob(g, [[-10, cy - 19, 5], [-4, cy - 22, 5.5], [3, cy - 22, 5.5], [10, cy - 19, 5], [0, cy - 17, 5]], '#eaf6ff', 1.5);
+      g.fillStyle = '#b8d8f0'; circ(g, -6, cy - 20, 1.6); circ(g, 4, cy - 21, 1.6);
+      [-1, 1].forEach(function (s) { // Augen leuchten
+        g.beginPath(); g.moveTo(s * 3, cy - 4); g.lineTo(s * 11, cy - 6); g.lineTo(s * 9, cy); g.lineTo(s * 3, cy + 1); g.closePath(); sfill(g, '#06123a', 1.3);
+        g.fillStyle = rgr(g, s * 7, cy - 2.5, 3.2, ['#ffffff', '#9ff0ff', '#2fc8ff']); circ(g, s * 7, cy - 2.5, 2.4);
+      });
+      facet(g, 0, cy - 10, 3.4, SAPH, 6);
+      [-1, 1].forEach(function (s) { line(g, [s * 6, cy + 20, s * 8, cy + 28], '#ffd23f', 1.4); g.beginPath(); g.ellipse(s * 8.5, cy + 30, 2.4, 3.4, 0, 0, TAU); sfill(g, '#2f7fe8', 1); });
+    } else if (k === 'krone') { // Jaguar-Krone: Goldkrone mit Jaguarflecken, Topasen und Jaguarkopf
+      var pts = [[-24, cy + 14], [-27, cy - 12], [-16, cy - 2], [-10, cy - 22], [0, cy - 8], [10, cy - 22], [16, cy - 2], [27, cy - 12], [24, cy + 14]];
+      g.beginPath(); pts.forEach(function (p, i) { if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); g.closePath(); sfill(g, gold(g, cy - 22, cy + 14), 2);
+      g.save(); g.clip();
+      g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.moveTo(-26, cy - 14); g.lineTo(-18, cy - 14); g.lineTo(-24, cy + 14); g.lineTo(-30, cy + 14); g.closePath(); g.fill();
+      [[-18, cy + 2], [-6, cy - 2], [6, cy + 4], [18, cy], [-12, cy + 8], [12, cy - 6], [-21, cy - 6], [21, cy - 6]].forEach(function (p) { g.fillStyle = '#8a4a08'; ell(g, p[0], p[1], 2.6, 2.1); g.fillStyle = '#e8a020'; ell(g, p[0], p[1], 1.2, 0.9); });
+      g.restore();
+      g.beginPath(); rrect(g, -26, cy + 10, 52, 9, 3); sfill(g, lgr(g, 0, cy + 10, 0, cy + 19, ['#ffe9a0', '#e8b030', '#a8600a']), 1.6);
+      for (var j = 0; j < 7; j++) { g.fillStyle = '#5a2a00'; circ(g, -21 + j * 7, cy + 14.5, 1.3); }
+      [[-27, cy - 12], [-10, cy - 22], [10, cy - 22], [27, cy - 12]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], 3.2, 0, TAU); sfill(g, rgr(g, p[0], p[1], 3.2, ['#ffffff', '#ffe14d', '#c88a00']), 1.2); });
+      // Jaguarkopf vorne
+      g.beginPath(); g.arc(0, cy + 2, 8.5, 0, TAU); sfill(g, rgr(g, 0, cy + 2, 8.5, ['#ffe9a0', '#ffc21a', '#c87a00']), 1.6);
+      [-1, 1].forEach(function (s) { g.beginPath(); g.arc(s * 6.5, cy - 5, 2.8, 0, TAU); sfill(g, '#ffc21a', 1.2); g.fillStyle = '#8a4a08'; circ(g, s * 6.5, cy - 5, 1.2); });
+      g.fillStyle = '#2a1400'; [[-4, cy - 1], [4, cy - 1]].forEach(function (p) { ell(g, p[0], p[1], 1.8, 1.4); });
+      g.fillStyle = '#7fff9a'; ell(g, -4, cy - 1, 0.7, 1.1); ell(g, 4, cy - 1, 0.7, 1.1);
+      g.fillStyle = '#5a2a00'; poly(g, [-2, cy + 3, 2, cy + 3, 0, cy + 5.5]); line(g, [0, cy + 5.5, 0, cy + 7, -2.5, cy + 8.5], '#5a2a00', 0.9); line(g, [0, cy + 7, 2.5, cy + 8.5], '#5a2a00', 0.9);
+      g.fillStyle = '#8a4a08'; [[-5, cy + 5], [5, cy + 5], [-3, cy - 4], [3, cy - 4]].forEach(function (p) { circ(g, p[0], p[1], 0.8); });
+      facet(g, 0, cy - 12, 4.2, TOPAZ);
+      g.fillStyle = '#ffffff'; star4(g, -18, cy - 8, 3); star4(g, 20, cy + 8, 2.2);
+    } else { // Smaragd-Amulett: Kette, goldener Ring mit Smaragd-Strahlen und großer geschliffener Smaragd
+      g.strokeStyle = OUT; g.lineWidth = 3.2; g.beginPath(); g.moveTo(-18, cy - 30); g.quadraticCurveTo(0, cy - 20, 18, cy - 30); g.stroke();
+      g.strokeStyle = '#e8b030'; g.lineWidth = 1.8; g.setLineDash([2.2, 1.4]); g.stroke(); g.setLineDash([]);
+      g.beginPath(); g.arc(0, cy - 22, 3, 0, TAU); sfill(g, gold(g, cy - 25, cy - 19), 1.2);
+      rays(g, 0, cy, 15, 27, 16, function (i) { return i % 2 ? '#0f8a44' : '#3fe07a'; }, 0.13);
+      g.beginPath(); g.arc(0, cy, 17, 0, TAU); sfill(g, gold(g, cy - 17, cy + 17), 2);
+      g.beginPath(); g.arc(0, cy, 13.5, 0, TAU); g.fillStyle = '#0a3a1c'; g.fill(); g.strokeStyle = OUT; g.lineWidth = 1.2; g.stroke();
+      for (var l = 0; l < 8; l++) { // Blätter auf dem Ring
+        var la = l / 8 * TAU + 0.2; g.save(); g.translate(Math.cos(la) * 15.3, cy + Math.sin(la) * 15.3); g.rotate(la + Math.PI / 2);
+        g.fillStyle = '#a8600a'; g.beginPath(); g.ellipse(0, 0, 2.6, 1, 0, 0, TAU); g.fill(); g.restore();
+      }
+      facet(g, 0, cy, 11, EMER, 8);
+      [[-12, cy + 18], [12, cy + 18], [0, cy + 22]].forEach(function (p, i) { line(g, [p[0] * 0.6, cy + 14, p[0], p[1]], '#e8b030', 1.2); facet(g, p[0], p[1] + 2, i === 2 ? 3.2 : 2.4, EMER, 6); });
+      g.fillStyle = '#ffffff'; star4(g, 14, cy - 14, 3.2); star4(g, -16, cy + 8, 2.2);
     }
   }
   A.artSpr = function (k, shadow) {
-    return sprite('art|' + k + (shadow ? 's' : ''), [-28, -52, 28, 4], function (g) { artDraw(g, k); },
-      shadow ? { silhouette: '#5a6a50', olc: '#3a4a30', shade: false } : { ol: 1.8 });
+    return sprite('art2|' + k + (shadow ? 's' : ''), [-34, -60, 34, 12], function (g) { artDraw(g, k); },
+      shadow ? { silhouette: '#5a6a50', olc: '#3a4a30', shade: false, sc: 3 } : { ol: 1.8, sc: 4 });
   };
   var aurl = {};
   A.artURL = function (k, shadow) { var key = k + (shadow ? 's' : ''); if (!aurl[key]) aurl[key] = A.artSpr(k, shadow).c.toDataURL(); return aurl[key]; };
@@ -380,9 +444,9 @@
       A.rrect(ctx, px - 7, py - 10, 14, 10, 2); ctx.fill(); ctx.stroke();
       if (arts[a.k]) {
         var bob = Math.sin(time * 2 + i) * 2;
-        var gr = ctx.createRadialGradient(px, py - 22, 1, px, py - 22, 18); gr.addColorStop(0, a.col + 'b0'); gr.addColorStop(1, a.col + '00');
-        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(px, py - 22, 18, 0, TAU); ctx.fill();
-        A.blit(ctx, A.artSpr(a.k), px, py - 9 + bob, 0.45);
+        var gr = ctx.createRadialGradient(px, py - 20, 1, px, py - 20, 15); gr.addColorStop(0, a.col + 'b0'); gr.addColorStop(1, a.col + '00');
+        ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(px, py - 20, 15, 0, TAU); ctx.fill();
+        A.blit(ctx, A.artSpr(a.k), px, py - 13 + bob, 0.27);
       } else {
         ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.font = '12px "Lilita One", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', px, py - 13);
       }
