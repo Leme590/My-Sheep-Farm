@@ -452,6 +452,7 @@ SI.LANG = {
   "Lianenschaukel": ["Vine Swing", "Balançoire de lianes", "Columpio de lianas"],
   "Tempelabenteuer": ["Temple Adventure", "Aventure au temple", "Aventura en el templo"],
   "+{x} % Geld, wenn sie auf der Farm steht. Leuchtet nachts!": ["+{x} % money when placed on the farm. Glows at night!", "+{x} % d'argent quand elle est sur la ferme. Brille la nuit !", "+{x} % de dinero cuando está en la granja. ¡Brilla de noche!"],
+  "Mache alle 7 Rebirths": ["Do all 7 rebirths", "Fais les 7 renaissances", "Haz los 7 renacimientos"],
   "Schere Stein Papier": ["Rock Paper Scissors", "Pierre Feuille Ciseaux", "Piedra Papel Tijera"],
   "Wer zuerst 3 Runden gewinnt": ["First to win 3 rounds", "Le premier à gagner 3 manches", "El primero en ganar 3 rondas"],
   "Tic Tac Toe": ["Tic Tac Toe", "Morpion", "Tres en raya"],

@@ -83,7 +83,7 @@
   // Kai: pro Rebirth +25 % Geld und 2 neue Plätze, höchstens 6 Rebirths
   G.RB_BONUS = 0.25; G.RB_PLOTS = 2;
   G.rbMult = function (n) { return 1 + G.RB_BONUS * (n == null ? G.S.rebirths : n); };
-  G.plotCount = function () { return 8 + G.RB_PLOTS * Math.min(G.S.rebirths, 6); };
+  G.plotCount = function () { return 8 + G.RB_PLOTS * Math.min(G.S.rebirths, G.MAXRB); };
   G.penOf = function (t) { for (var i = 0; i < G.S.pens.length; i++) if (G.S.pens[i] && G.S.pens[i].t === t) return i; return -1; };
   // Kai: eine Schafsorte darf viele Gehege haben. Jedes Gehege merkt sich, wie viele Schafe drin sind (p.n).
   G.pensOf = function (t) { var r = []; for (var i = 0; i < G.plotCount(); i++) if (G.S.pens[i] && G.S.pens[i].t === t) r.push(i); return r; };
@@ -446,8 +446,8 @@
 
   /* ---------- Rebirth ---------- */
   // Preise der Rebirths (mit einer Spieler-Simulation abgestimmt: 1. Rebirth ca. 5 Min., danach immer länger)
-  var RB_COST = [4e5, 1e7, 2e8, 2e10, 1e14, 5e14]; // Kai: die letzten zwei sind günstiger
-  G.MAXRB = 6; // Kai: es gibt höchstens 6 Rebirths
+  var RB_COST = [4e5, 1e7, 2e8, 2e10, 1e14, 5e14, 1e15]; // Kai: die letzten zwei sind günstiger, Rebirth 7 kostet 1Qa
+  G.MAXRB = 7; // Kai: es gibt höchstens 7 Rebirths
   G.rebirthMax = function () { return G.S.rebirths >= G.MAXRB; };
   G.rebirthCost = function () { return RB_COST[Math.min(G.S.rebirths, RB_COST.length - 1)]; };
   G.doRebirth = function () {

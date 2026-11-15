@@ -260,7 +260,7 @@ window.SI = window.SI || {};
     { k: 'gold5', n: 'Goldfänger', d: 'Fange 5 goldene Schafe', t: function (S) { return S.stats.golden >= 5; } },
     { k: 'z10', n: 'Züchter', d: 'Züchte 10 Babys', t: function (S) { return S.stats.breeds >= 10; } },
     { k: 'rb1', n: 'Wiedergeburt', d: 'Mache deinen ersten Rebirth', t: function (S) { return S.rebirths >= 1; } },
-    { k: 'rb5', n: 'Unsterblich', d: 'Mache alle 6 Rebirths', t: function (S) { return S.rebirths >= 6; } },
+    { k: 'rb5', n: 'Unsterblich', d: 'Mache alle 7 Rebirths', t: function (S) { return S.rebirths >= 7; } },
     { k: 'nacht', n: 'Nachteule', d: 'Spiele eine ganze Nacht durch', t: function (S) { return S.stats.nights >= 1; } }
   ];
 
