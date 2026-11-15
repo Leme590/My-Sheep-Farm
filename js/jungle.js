@@ -125,10 +125,9 @@
     }
     var snake = SAFE[st] ? -1 : Math.floor(Math.random() * 4);
     if (snake >= 0) doors[snake] = { k: 'snake' };
-    // Das Sonnen-Amulett versteckt sich manchmal ab Stufe 8 hinter einer Tür
-    if (st >= 8 && !G.arts().amulett && Math.random() < 0.1) {
-      var free = [0, 1, 2, 3].filter(function (i) { return i !== snake; });
-      doors[free[Math.floor(Math.random() * free.length)]] = { k: 'amulett' };
+    // Kai: Jede Tür (außer der Schlange) hat auf jeder Stufe 0,55 % Chance auf das Smaragd-Amulett
+    if (!G.arts().amulett) {
+      for (var a = 0; a < 4; a++) if (a !== snake && Math.random() < 0.0055) { doors[a] = { k: 'amulett' }; break; }
     }
     doors.forEach(function (d) {
       if (d.k === 'coins') d.v = Math.max(150 * st, Math.ceil(incNow() * stageSec(st)));
