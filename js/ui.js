@@ -450,12 +450,6 @@
         '<div class="odds">' + oddsChips(nb) + '</div>' +
         costBtn(G.boxPrice('nacho'), 'open:nacho', 'Öffnen') + '</div></div>';
     } else h += '<p class="hint center">🌮 Jeden Dienstag ist Taco Tuesday mit der Nacho-Box!</p>';
-    // Dschungel-Event: Dschungelkiste (Kai: 5 T, 5 % Exotisch)
-    if (SI.jungleOn()) {
-      var jb = SI.JBOX;
-      h += '<div class="boxcard bx-dschungel jungle"><img src="' + A.boxURL('dschungel') + '" alt=""><div style="min-width:0"><div class="jgtag"><span>🌴</span> Nur im Dschungel-Event</div><h3>' + esc(jb.n) + '</h3>' +
-        '<div class="odds">' + oddsChips(jb) + '</div>' + costBtn(G.boxPrice('dschungel'), 'open:dschungel', 'Öffnen') + '</div></div>';
-    }
     SI.BOX.forEach(function (b) {
       var chips = oddsChips(b);
       if (!G.boxUnlocked(b.k)) {
@@ -466,6 +460,12 @@
       var deal = mo ? '<div class="deal' + (mo === 1 ? ' free' : '') + '">Händler-Angebot: ' + (mo === 1 ? '🎁 GRATIS!' : mo === 0.75 ? '75 % billiger!' : 'halber Preis!') + '</div>' : '';
       h += '<div class="boxcard bx-' + b.k + '"><img src="' + A.boxURL(b.k) + '" alt=""><div style="min-width:0"><h3>' + esc(b.n) + '</h3>' + deal + '<div class="odds">' + chips + '</div>' + costBtn(G.boxPrice(b.k), 'open:' + b.k, 'Öffnen') + '</div></div>';
     });
+    // Dschungel-Event: Dschungelkiste (Kai: 5 T, 5 % Exotisch, ganz unten unter der Galaxiekiste)
+    if (SI.jungleOn()) {
+      var jb = SI.JBOX;
+      h += '<div class="boxcard bx-dschungel jungle"><img src="' + A.boxURL('dschungel') + '" alt=""><div style="min-width:0"><div class="jgtag"><span>🌴</span> Nur im Dschungel-Event</div><h3>' + esc(jb.n) + '</h3>' +
+        '<div class="odds">' + oddsChips(jb) + '</div>' + costBtn(G.boxPrice('dschungel'), 'open:dschungel', 'Öffnen') + '</div></div>';
+    }
     h += '<p class="hint">Die Preise bleiben immer gleich. Bessere Kisten schaltest du mit Rebirths frei. Glücksklee-Karten machen seltene Schafe wahrscheinlicher' + (G.card('glueck') ? ' (gerade +' + G.cardBonus('glueck') + ' % Glück)' : '') + '.</p>';
     return { title: 'Mystery-Boxen', html: h };
   };

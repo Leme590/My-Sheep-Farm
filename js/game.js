@@ -144,10 +144,11 @@
   G.setBonus = function () { return G.SET_BONUS * G.setsDone().length; };
   /* ---------- Verlorene Artefakte (Dschungel-Event, Kai) ---------- */
   SI.ARTS = [
-    { k: 'auge', n: 'Smaragd-Auge', d: '+20 % Glück in allen Kisten und doppelte Chance auf Mutationen aus Kisten' },
-    { k: 'maske', n: 'Uralte Schafsmaske', d: 'Zucht 50 % schneller und mehr Glück beim Züchten' },
-    { k: 'krone', n: 'Jaguar-Krone', d: '+30 % Geld', money: 0.3 },
-    { k: 'amulett', n: 'Sonnen-Amulett', d: '+30 % Geld', money: 0.3 }
+    // Kai: jedes Artefakt hat eine Farbe und einen Hinweis, wo man es grob findet
+    { k: 'auge', n: 'Rubin-Auge', t: 'Mystery-Boxen-Artefakt', col: '#e8322e', d: '+20 % Glück in allen Kisten und doppelte Chance auf Mutationen aus Kisten' },
+    { k: 'maske', n: 'Saphir-Maske', t: 'Zucht-Artefakt', col: '#2f7fe8', d: 'Zucht 50 % schneller und mehr Glück beim Züchten' },
+    { k: 'krone', n: 'Jaguar-Krone', t: 'Duell-Artefakt', col: '#ffc21a', d: '+30 % Geld', money: 0.3 },
+    { k: 'amulett', n: 'Smaragd-Amulett', t: 'Expeditions-Artefakt', col: '#2fd08a', d: '+30 % Geld', money: 0.3 }
   ];
   SI.ART = {}; SI.ARTS.forEach(function (a) { SI.ART[a.k] = a; });
   G.arts = function () { return G.S.arts || (G.S.arts = {}); };

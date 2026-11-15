@@ -70,6 +70,27 @@
   }
   function notes(list, step, o) { list.forEach(function (f, i) { if (f) tone(f, (o && o.d) || step * 1.6, Object.assign({}, o, { at: ((o && o.at) || 0) + i * step })); }); }
   var N = function (n) { return 440 * Math.pow(2, (n - 69) / 12); }; // MIDI-Note
+  // Trommel (Tom): Ton fällt schnell ab
+  function tom(at, f, vol, bus) {
+    var t = X.currentTime + at, o = X.createOscillator(), g = X.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(f * 1.8, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.06);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+    o.connect(g); g.connect(bus || sfxBus); o.start(t); o.stop(t + 0.5);
+    noise(0.04, { at: at, ft: 'lowpass', f: 1200, vol: vol * 0.3, bus: bus || sfxBus });
+  }
+  function gong(at, vol) {
+    [1, 1.48, 2.11, 2.73, 3.6].forEach(function (m, i) { tone(110 * m, 2.6 - i * 0.3, { at: at, type: 'sine', vol: vol / (1 + i), a: 0.004 }); });
+    noise(0.5, { at: at, ft: 'bandpass', f: 900, q: 1, vol: vol * 0.3 });
+  }
+  function choir(f, at, d, vol) { // weicher "Aaah"-Chor
+    var t = X.currentTime + at;
+    [-7, 0, 7].forEach(function (det) {
+      var o = X.createOscillator(), bp = X.createBiquadFilter(), g = X.createGain(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = det;
+      bp.type = 'bandpass'; bp.frequency.value = 800; bp.Q.value = 1.2;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.4); g.gain.linearRampToValueAtTime(0.0001, t + d);
+      o.connect(bp); bp.connect(g); g.connect(sfxBus); o.start(t); o.stop(t + d + 0.05);
+    });
+  }
 
   // Schafs-Mäh: Sägezahn mit Vibrato durch zwei "Mund"-Filter
   // Schafs-Mäh, möglichst echt: Stimme mit "Meckern" (schnelles Zittern), Mund geht von "m" zu "äh" auf, etwas Atem
@@ -189,6 +210,37 @@
     },
     snake: function () { noise(0.9, { ft: 'highpass', f: 4000, vol: 0.18 }); tone(220, 0.3, { type: 'sawtooth', vol: 0.04, to: 120, at: 0.1 }); },
     jdoor: function () { noise(0.5, { ft: 'lowpass', f: 400, fto: 150, vol: 0.25 }); knock(0.45, 90, 0.3); },
+    // Artefakt gefunden (Kai: sehr sehr krass): Trommelwirbel, Anstieg, riesiger Gong, Chor-Akkord, Glitzer
+    artroll: function () {
+      for (var i = 0; i < 22; i++) { var at = i * (0.11 - i * 0.003); tom(at, 90 + i * 2, 0.08 + i * 0.008); }
+      noise(2.2, { ft: 'bandpass', f: 300, fto: 5000, q: 2, vol: 0.12, a: 1.6 });
+      tone(55, 2.3, { type: 'sawtooth', vol: 0.05, to: 220, a: 1.5 });
+    },
+    artboom: function () {
+      tone(45, 3.2, { type: 'sine', vol: 0.5, a: 0.003, to: 38 }); tone(90, 2.4, { type: 'sine', vol: 0.25, a: 0.003 });
+      noise(1.6, { ft: 'lowpass', f: 1800, fto: 120, vol: 0.4 });
+      [130.8, 164.8, 196, 261.6, 329.6, 392, 523.3].forEach(function (f, i) { choir(f, 0.05 + i * 0.03, 3.2, 0.045); });
+      [72, 76, 79, 84, 88, 91, 96, 100].forEach(function (n, i) { tone(N(n), 1.3, { type: 'triangle', vol: 0.05, at: 0.5 + i * 0.07, a: 0.003 }); });
+      sparkle(1.1, 30);
+    },
+    // Tempel-Expedition
+    xstage: function () { [0, 0.12, 0.24].forEach(function (a, i) { tom(a, i === 2 ? 70 : 110, 0.35); }); gong(0.36, 0.22); },
+    xopen: function () {
+      noise(0.7, { ft: 'lowpass', f: 300, fto: 90, vol: 0.32 }); creak(0, 0.55, 14, 30, 500, 0.1); knock(0.6, 70, 0.35);
+    },
+    xreward: function () { [79, 83, 86, 91].forEach(function (n, i) { tone(N(n), 0.6, { type: 'triangle', vol: 0.07, at: i * 0.07, a: 0.003 }); }); sparkle(0.3, 8); },
+    xsnake: function () {
+      tom(0, 60, 0.6); noise(0.18, { ft: 'lowpass', f: 900, vol: 0.4 });
+      noise(1.3, { at: 0.05, ft: 'highpass', f: 5000, vol: 0.22, a: 0.05 });
+      for (var i = 0; i < 14; i++) noise(0.05, { at: 0.2 + i * 0.07, ft: 'bandpass', f: 6500, q: 3, vol: 0.12 }); // Rassel
+      tone(N(50), 1.2, { type: 'sawtooth', vol: 0.06, at: 0.1, to: N(38) }); tone(N(53), 1.2, { type: 'sawtooth', vol: 0.05, at: 0.1, to: N(41) });
+    },
+    xwin: function () {
+      [60, 64, 67, 72, 76, 79, 84].forEach(function (n, i) { tone(N(n), 0.5, { type: 'square', vol: 0.03, at: i * 0.09 }); });
+      [[60, 64, 67, 72], [65, 69, 72, 77], [67, 71, 74, 79], [72, 76, 79, 84]].forEach(function (c, k) { c.forEach(function (n) { tone(N(n), k === 3 ? 2 : 0.45, { type: 'sawtooth', vol: 0.025, at: 0.7 + k * 0.3, a: 0.01 }); }); tom(0.7 + k * 0.3, 90, 0.3); });
+      gong(1.6, 0.25); sparkle(1.6, 24);
+    },
+    torch: function () { for (var i = 0; i < 4; i++) noise(0.03 + Math.random() * 0.05, { at: Math.random() * 0.6, ft: 'bandpass', f: 1500 + Math.random() * 2500, q: 2, vol: 0.03, bus: ambBus }); },
     // Zucht öffnen (Kai): Harfe nach oben, dann rufen sich zwei Schafe zu
     love: function () {
       [67, 71, 74, 79, 83, 86].forEach(function (n, i) { tone(N(n), 0.9, { type: 'triangle', vol: 0.07, at: i * 0.05, a: 0.003 }); });
@@ -322,10 +374,47 @@
           [top, low].forEach(function (m, i) { tone(N(m), 0.4, { at: at, type: 'sine', vol: (i ? 0.03 : 0.045) * v, a: 0.003, bus: musBus }); tone(N(m) * 4, 0.08, { at: at, type: 'sine', vol: 0.008 * v, a: 0.002, bus: musBus }); });
         }
       } }
+    ,
+    // 5 "Dschungeltrommeln" und 6 "Lianenschaukel": im Dschungel (Kai). 7 "Tempelabenteuer": nur in der Tempel-Expedition
+    { name: 'Dschungeltrommeln', ev: 'jg', spb: 0.21, per: 8, day: [[50, 57, 62, 65], [48, 55, 60, 64], [46, 53, 58, 62], [45, 52, 57, 61]], night: [[45, 52, 57, 60], [43, 50, 55, 58], [41, 48, 53, 57], [40, 47, 52, 56]],
+      play: function (at, st, bar, spb, ch, mo, nt) {
+        var v = nt ? 0.7 : 1;
+        if (st === 0 || st === 3 || st === 6) tom(at, st === 0 ? 75 : 95, 0.16 * v, musBus);
+        if (st === 4) tom(at, 130, 0.08 * v, musBus);
+        noise(0.04, { at: at, ft: 'highpass', f: 7000, vol: (st % 2 ? 0.008 : 0.014) * v, bus: musBus });
+        if (st === 0) { pad(N(ch[0] - 12), at, spb * 8, 0.03 * v, 'sine'); ch.slice(1).forEach(function (n) { pad(N(n), at, spb * 8, 0.012 * v); }); }
+        var d = mo[bar % 2][st]; if (d != null && bar % 8 < 7) marimba(N((nt ? 69 : 74) + MIN[d]), at, 0.07 * v);
+        if (bar % 4 === 3 && st === 7) marimba(N(ch[3] + 12), at, 0.05 * v);
+      } },
+    { name: 'Lianenschaukel', ev: 'jg', spb: 0.29, per: 6, day: [[55, 59, 62, 67], [52, 55, 59, 64], [48, 52, 55, 60], [50, 54, 57, 62]], night: [[52, 55, 59, 64], [48, 52, 55, 59], [45, 48, 52, 57], [47, 50, 54, 59]],
+      play: function (at, st, bar, spb, ch, mo, nt) {
+        var v = nt ? 0.75 : 1;
+        if (st === 0) { tone(N(ch[0] - 12), spb * 3, { at: at, type: 'sine', vol: 0.12 * v, a: 0.02, bus: musBus }); pad(N(ch[1]), at, spb * 6, 0.015 * v); pad(N(ch[2]), at, spb * 6, 0.015 * v); }
+        if (st === 3) tone(N(ch[2] - 12), spb * 2, { at: at, type: 'sine', vol: 0.08 * v, a: 0.02, bus: musBus });
+        kalimba(N(ch[[0, 2, 1, 3, 2, 1][st]] + 12), at, 0.045 * v);
+        if (st === 2 || st === 5) noise(0.05, { at: at, ft: 'bandpass', f: 3000, q: 2, vol: 0.01 * v, bus: musBus });
+        if (bar % 4 >= 2) { var d = mo[0][st]; if (d != null && st % 3 === 0) flute(N((nt ? 74 : 79) + MAJ[d]), at, spb * 2.6, 0.045 * v); }
+      } },
+    { name: 'Tempelabenteuer', ev: 'exp', spb: 0.17, per: 8, day: [[45, 52, 57, 60], [43, 50, 55, 58], [41, 48, 53, 57], [44, 52, 56, 59]], night: [[45, 52, 57, 60], [43, 50, 55, 58], [41, 48, 53, 57], [44, 52, 56, 59]],
+      play: function (at, st, bar, spb, ch, mo) {
+        if (st === 0 || st === 3 || st === 5) tom(at, 65, 0.2, musBus);
+        if (st === 2 || st === 6) tom(at, 110, 0.12, musBus);
+        if (st === 4) noise(0.12, { at: at, ft: 'bandpass', f: 1800, q: 0.8, vol: 0.04, bus: musBus });
+        noise(0.03, { at: at, ft: 'highpass', f: 8000, vol: 0.012, bus: musBus });
+        if (st % 2 === 0) pluck(N(ch[0] - 12), at, 0.07);
+        if (st === 0) ch.forEach(function (n) { pad(N(n), at, spb * 8, 0.018, 'sawtooth'); });
+        var d = mo[bar % 2][st]; if (d != null && st % 2 === 0 && bar % 4 !== 3) marimba(N(69 + MIN[d]), at, 0.07);
+        if (bar % 8 === 7 && st === 0) flute(N(81), at, spb * 6, 0.05);
+      } }
   ];
+  function marimba(f, at, vol) { tone(f, 0.5, { at: at, type: 'sine', vol: vol, a: 0.002, bus: musBus }); tone(f * 4, 0.09, { at: at, type: 'sine', vol: vol * 0.25, a: 0.001, bus: musBus }); }
+  function kalimba(f, at, vol) { tone(f, 0.9, { at: at, type: 'sine', vol: vol, a: 0.002, bus: musBus }); tone(f * 5.4, 0.12, { at: at, type: 'sine', vol: vol * 0.2, a: 0.001, bus: musBus }); }
+  var forced = null;
   // Taco Tuesday? (SI.G gibt es erst nach dem Laden des Spiels)
   function tacoDay() { return SI.G && SI.G.isTaco ? SI.G.isTaco() : new Date().getDay() === 2; }
   function pickTrack(avoid) {
+    if (forced != null) return forced;
+    if (SI.env === 'dschungel' && Math.random() < 0.6) { var j = avoid === 4 ? 5 : avoid === 5 ? 4 : 4 + Math.floor(Math.random() * 2); return j; } // Kai: Dschungel-Lieder
     if (tacoDay() && avoid !== 3 && Math.random() < 0.6) return 3; // am Dienstag meistens die Fiesta
     var nt; do { nt = Math.floor(Math.random() * 3); } while (nt === avoid);
     return nt;
@@ -363,6 +452,9 @@
     setSfxVol: function (v) { sfxVol = v; store('schaf_sfxvol', v); applyVol(); },
     selfTest: function () { if (!init()) return ['no audio']; var bad = []; Object.keys(FX).forEach(function (k) { try { FX[k]('l'); } catch (e) { bad.push(k + ': ' + e.message); } }); try { baa(); TRACKS.forEach(function (tr) { for (var b = 0; b < 8; b++) tr.play(0.1, b % tr.per, b, tr.spb, tr.day[0], [newMotif(8), newMotif(8)], b > 3); }); } catch (e) { bad.push('music: ' + e.message); } return bad; },
     trackName: function () { return TRACKS[track].name; }, nextTrack: function () { barsLeft = 1; },
+    // Ein Stück fest einstellen (Tempel-Expedition), null = wieder zufällig
+    force: function (k) { var i = k == null ? null : TRACKS.map(function (t) { return t.name; }).indexOf(k); forced = i < 0 ? null : i; if (forced != null) { if (track !== forced) { track = forced; beat = 0; motifFor = -1; rest = 0; barsLeft = 999; } } else { barsLeft = Math.min(barsLeft, 2); } },
+    torch: function () { if (on && ready()) try { FX.torch(); } catch (e) { /* egal */ } },
     setMusVol: function (v) { musVol = v; store('schaf_musvol', v); applyVol(); }
   };
   // Browser erlauben Ton erst nach dem ersten Tippen

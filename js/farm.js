@@ -59,22 +59,22 @@
     var J = SI.env === 'dschungel'; patEnv = SI.env || 'wiese';
     var c = document.createElement('canvas'); c.width = c.height = 160;
     var g = c.getContext('2d'), R = A.rng(7), i;
-    g.fillStyle = J ? '#5cae44' : '#86d65a'; g.fillRect(0, 0, 160, 160);
-    g.fillStyle = J ? '#54a33c' : '#7ccc50'; for (i = 0; i < 160; i += 40) g.fillRect(i, 0, 20, 160);
+    g.fillStyle = J ? '#3f8a32' : '#86d65a'; g.fillRect(0, 0, 160, 160);
+    g.fillStyle = J ? '#38802c' : '#7ccc50'; for (i = 0; i < 160; i += 40) g.fillRect(i, 0, 20, 160);
     for (i = 0; i < 70; i++) {
       var x = R() * 160, y = R() * 160;
-      g.strokeStyle = R() < 0.5 ? (J ? '#7ccc58' : '#9be36c') : (J ? '#3f8a30' : '#63b23f'); g.lineWidth = 1.6; g.lineCap = 'round';
+      g.strokeStyle = R() < 0.5 ? (J ? '#5aa844' : '#9be36c') : (J ? '#2a6a22' : '#63b23f'); g.lineWidth = 1.6; g.lineCap = 'round';
       g.beginPath(); g.moveTo(x - 2, y + 2); g.lineTo(x - 1, y - 2); g.moveTo(x, y + 2); g.lineTo(x + 1, y - 3); g.moveTo(x + 2, y + 2); g.lineTo(x + 3.5, y - 1.5); g.stroke();
     }
     if (J) { // große Blätter am Boden
-      for (i = 0; i < 9; i++) { var lx = R() * 160, ly = R() * 160, la = R() * 6.28; g.save(); g.translate(lx, ly); g.rotate(la); g.fillStyle = R() < 0.5 ? '#3f9a3a' : '#4aaa44'; A.ell(g, 0, 0, 7, 3); g.strokeStyle = '#2f7a2a'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-6, 0); g.lineTo(6, 0); g.stroke(); g.restore(); }
+      for (i = 0; i < 9; i++) { var lx = R() * 160, ly = R() * 160, la = R() * 6.28; g.save(); g.translate(lx, ly); g.rotate(la); g.fillStyle = R() < 0.5 ? '#2f7a2c' : '#3a8a34'; A.ell(g, 0, 0, 7, 3); g.strokeStyle = '#2f7a2a'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-6, 0); g.lineTo(6, 0); g.stroke(); g.restore(); }
     }
     for (i = 0; i < 10; i++) { var fx = R() * 160, fy = R() * 160; g.fillStyle = (J ? ['#ff4f6a', '#ffb02e', '#e86bff'] : ['#ffffff', '#ffe066', '#ff8fb8'])[i % 3]; for (var k = 0; k < 5; k++) A.circ(g, fx + Math.cos(k * 1.26) * 1.6, fy + Math.sin(k * 1.26) * 1.6, 1.1); g.fillStyle = '#ffb000'; A.circ(g, fx, fy, 0.9); }
     grassPat = ctx.createPattern(c, 'repeat');
     var o = document.createElement('canvas'); o.width = o.height = 128;
     g = o.getContext('2d'); R = A.rng(11);
-    g.fillStyle = J ? '#2f7f34' : '#4fa63e'; g.fillRect(0, 0, 128, 128);
-    for (i = 0; i < 110; i++) { g.fillStyle = R() < 0.5 ? (J ? '#3a8f3c' : '#5bb348') : (J ? '#246a2a' : '#469935'); A.ell(g, R() * 128, R() * 128, 1 + R() * 3, 1 + R() * 2); }
+    g.fillStyle = J ? '#1f5a24' : '#4fa63e'; g.fillRect(0, 0, 128, 128);
+    for (i = 0; i < 110; i++) { g.fillStyle = R() < 0.5 ? (J ? '#2a6e2c' : '#5bb348') : (J ? '#164a1c' : '#469935'); A.ell(g, R() * 128, R() * 128, 1 + R() * 3, 1 + R() * 2); }
     outerPat = ctx.createPattern(o, 'repeat');
   }
   F.envChanged = function () { if (ctx && patEnv !== (SI.env || 'wiese')) makePatterns(); };
