@@ -32,6 +32,7 @@
     heart_self: 'Deiner eigenen Farm kannst du kein Herz geben.',
     heart_done: 'Dieser Farm hast du heute schon ein Herz gegeben.',
     bad_amount: 'Bitte gib einen gültigen Betrag ein.',
+    'Could not find the function': 'Der Server ist noch nicht auf dem neuesten Stand. Führe das neue supabase.sql in Supabase aus.',
     network: 'Keine Verbindung zum Server. Prüfe dein Internet und versuch es nochmal.'
   };
   N.errText = function (e) {
