@@ -534,6 +534,54 @@
   A.drawSheep2 = function (ctx, t, x, y, frame, sleep, sc, flip) {
     A.blit(ctx, A.sheepSpr(t, frame, sleep), x, y, sc, flip, [17, 4.5]);
   };
+  // Mutierte Schafe (Kai): glänzend = goldene Wolle mit Glanz, Regenbogen = bunte Wolle, deren Farben durchlaufen
+  var mcache = {};
+  A.mutSpr = function (t, frame, sleep, mu, step) {
+    var key = t.id + frame + (sleep ? 1 : 0) + mu + (step || 0);
+    if (mcache[key]) return mcache[key];
+    var s = A.sheepSpr(t, frame, sleep), c = document.createElement('canvas'); c.width = s.c.width; c.height = s.c.height;
+    var g = c.getContext('2d'), W = c.width, H = c.height;
+    g.drawImage(s.c, 0, 0);
+    g.globalCompositeOperation = 'multiply';
+    var gr;
+    if (mu === 'r') {
+      gr = g.createLinearGradient(0, 0, W, H * 0.6);
+      var sh = (step || 0) / 12;
+      ['#ff4d4d', '#ffa42e', '#ffe34a', '#4fd65f', '#3fa8ff', '#9b5bff', '#ff4fc8', '#ff4d4d'].forEach(function (col, i, arr) { gr.addColorStop(((i / (arr.length - 1)) + sh) % 1, col); });
+    } else { gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#fff3a0'); gr.addColorStop(0.5, '#ffd23a'); gr.addColorStop(1, '#e8a412'); }
+    g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'destination-in'; g.drawImage(s.c, 0, 0);
+    g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.3; g.fillStyle = gr; g.fillRect(0, 0, W, H); // auch dunkle Wolle bekommt Farbe
+    // Glanz-Streifen
+    g.globalCompositeOperation = 'source-atop'; g.globalAlpha = mu === 'r' ? 0.25 : 0.4;
+    var gl = g.createLinearGradient(0, 0, W, H); gl.addColorStop(0.3, 'rgba(255,255,255,0)'); gl.addColorStop(0.42, '#ffffff'); gl.addColorStop(0.54, 'rgba(255,255,255,0)');
+    g.fillStyle = gl; g.fillRect(0, 0, W, H);
+    return (mcache[key] = { c: c, w: s.w, h: s.h, ax: s.ax, ay: s.ay });
+  };
+  var murls = {};
+  A.mutURL = function (t, mu) { var k = t.id + mu; if (!murls[k]) murls[k] = A.mutSpr(t, 0, false, mu, 0).c.toDataURL(); return murls[k]; };
+  A.drawMutSheep = function (ctx, mu, t, x, y, frame, sleep, sc, flip, tm) {
+    var step = mu === 'r' ? Math.floor(tm * 4) % 12 : 0, s = A.mutSpr(t, frame, sleep, mu, step);
+    // Schein dahinter
+    ctx.save();
+    var hue = (tm * 90) % 360, cy = y - 16 * sc, g = ctx.createRadialGradient(x, cy, 2, x, cy, 30 * sc);
+    var c0 = mu === 'r' ? 'hsla(' + hue + ',100%,65%,' : 'rgba(255,215,80,';
+    g.addColorStop(0, c0 + '.6)'); g.addColorStop(1, c0 + '0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, cy, 30 * sc, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    A.blit(ctx, s, x, y, sc, flip, [17, 4.5]);
+    // Funkeln
+    ctx.save();
+    for (var i = 0; i < 3; i++) {
+      var p = (tm * 0.7 + i / 3) % 1, a = Math.sin(p * Math.PI);
+      var px = x + Math.cos(i * 2.1 + tm * 0.4) * 18 * sc, py = y - 18 * sc + Math.sin(i * 1.7 + tm * 0.5) * 14 * sc;
+      ctx.globalAlpha = a; ctx.fillStyle = mu === 'r' ? 'hsl(' + ((hue + i * 120) % 360) + ',100%,70%)' : '#fff6b0';
+      var r2 = (2 + a * 3) * sc;
+      ctx.beginPath(); ctx.moveTo(px, py - r2 * 2); ctx.lineTo(px + r2 * 0.5, py - r2 * 0.5); ctx.lineTo(px + r2 * 2, py); ctx.lineTo(px + r2 * 0.5, py + r2 * 0.5);
+      ctx.lineTo(px, py + r2 * 2); ctx.lineTo(px - r2 * 0.5, py + r2 * 0.5); ctx.lineTo(px - r2 * 2, py); ctx.lineTo(px - r2 * 0.5, py - r2 * 0.5); ctx.closePath(); ctx.fill();
+    }
+    ctx.restore();
+  };
   // Alte Schnittstelle (Statue nutzt sie)
   A.sheepSprite = function (t, frame, sleep, shadow) { return A.sheepSpr(t, frame, sleep, shadow).c; };
 

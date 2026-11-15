@@ -5,12 +5,12 @@
   var T = SI.T;
 
   function freshRun() {
-    return { coins: 120, run: 0, sheep: { wiese: 1 }, pens: [{ t: 'wiese', lvl: 1, n: 1 }], cards: {}, bought: {}, breed: null };
+    return { coins: 120, run: 0, sheep: { wiese: 1 }, pens: [{ t: 'wiese', lvl: 1, n: 1 }], cards: {}, bought: {}, breed: null, mut: {} };
   }
   G.fresh = function () {
     var s = freshRun();
     s.v = 2; s.total = 0; s.rebirths = 0; s.found = { wiese: 1 }; s.dekoFound = {}; s.dekoInv = {}; s.dekoPlaced = [];
-    s.dekoShop = { date: '', cnt: {} }; s.ach = {};
+    s.dekoShop = { date: '', cnt: {} }; s.ach = {}; s.mutFound = {};
     s.stats = { boxes: 0, wolves: 0, golden: 0, breeds: 0, taps: 0, dekoBoxes: 0, nights: 0, lvls: 0, duels: 0, duelWins: 0, visits: 0, hearts: 0 };
     s.daily = { last: '', streak: 0 }; s.playtime = 0; s.lastSave = Date.now(); s.lastNight = -1;
     return s;
@@ -40,6 +40,7 @@
     });
     Object.keys(nc).forEach(function (k) { if (SI.CK[k].max) nc[k] = Math.min(SI.CK[k].max, nc[k]); });
     s.cards = nc;
+    s.mut = s.mut && typeof s.mut === 'object' ? s.mut : {}; s.mutFound = s.mutFound && typeof s.mutFound === 'object' ? s.mutFound : {};
     G.S = s;
     // alte Spielstände (ohne Schaf-Anzahl pro Gehege): Gehege so voll wie möglich machen
     var old = s.pens.filter(function (p) { return p && p.n < 0; });
@@ -146,10 +147,43 @@
   G.boostLeft = function () { var b = G.S.boost; return b && b.end > Date.now() ? (b.end - Date.now()) / 1000 : 0; };
   G.boostMult = function () { return G.boostLeft() > 0 ? 2 : 1; };
   G.addBoost = function (sec) { var now = Date.now(), b = G.S.boost; G.S.boost = { end: Math.max(now, b && b.end || 0) + sec * 1000 }; };
+  /* ---------- Mutationen (Kai): Glänzend gibt ×2 Geld, Regenbogen ×5 (sehr selten) ---------- */
+  G.MUT = { g: { n: 'Glänzend', x: 2, p: 0.02, col: '#ffcf3a' }, r: { n: 'Regenbogen', x: 5, p: 0.002, col: '#ff5fd2' } };
+  G.rollMut = function () { var x = Math.random(); return x < G.MUT.r.p ? 'r' : x < G.MUT.r.p + G.MUT.g.p ? 'g' : null; };
+  // [glänzend, regenbogen] einer Sorte, nie mehr als Schafe da sind (zuerst gehen glänzende verloren)
+  G.mutOf = function (t) {
+    var m = (G.S.mut || {})[t]; if (!m) return [0, 0];
+    var have = G.S.sheep[t] || 0, r = Math.min(m[1] | 0, have), g = Math.min(m[0] | 0, have - r);
+    return [g, r];
+  };
+  G.fixMut = function () {
+    var M = G.S.mut || (G.S.mut = {});
+    Object.keys(M).forEach(function (t) { var m = G.mutOf(t); if (m[0] || m[1]) M[t] = m; else delete M[t]; });
+  };
+  G.addMut = function (t, k) {
+    var M = G.S.mut || (G.S.mut = {}), m = G.mutOf(t);
+    m[k === 'r' ? 1 : 0]++; M[t] = m;
+    var F = G.S.mutFound || (G.S.mutFound = {}), isNew = !F[t + ':' + k]; F[t + ':' + k] = 1;
+    G.S.stats['mut_' + k] = (G.S.stats['mut_' + k] || 0) + 1;
+    return isNew;
+  };
+  // Mutierte Schafe wohnen zuerst in den besten Gehegen. Gibt [glänzend, regenbogen] für Gehege i.
+  G.penMut = function (i) {
+    var p = G.S.pens[i]; if (!p) return [0, 0];
+    var m = G.mutOf(p.t); if (!m[0] && !m[1]) return [0, 0];
+    var r = m[1], g = m[0], out = [0, 0];
+    G.pensOf(p.t).sort(function (a, b) { return G.S.pens[b].lvl - G.S.pens[a].lvl || a - b; }).some(function (k) {
+      var q = G.S.pens[k], n = Math.min(q.n || 0, G.penCap(q.lvl)), rr = Math.min(r, n), gg = Math.min(g, n - rr);
+      r -= rr; g -= gg;
+      if (k === i) { out = [gg, rr]; return true; }
+      return false;
+    });
+    return out;
+  };
   G.penIncome = function (i) {
     var p = G.S.pens[i]; if (!p) return 0;
-    var n = Math.min(p.n || 0, G.penCap(p.lvl));
-    return n * T[p.t].inc * G.penMult(p.lvl);
+    var n = Math.min(p.n || 0, G.penCap(p.lvl)), m = G.penMut(i);
+    return (n + m[0] * (G.MUT.g.x - 1) + m[1] * (G.MUT.r.x - 1)) * T[p.t].inc * G.penMult(p.lvl);
   };
   G.baseIncome = function () { var b = 0; for (var i = 0; i < G.S.pens.length; i++) b += G.penIncome(i); return b; };
   G.wolfActive = false;
@@ -199,7 +233,7 @@
   // Schafe verkaufen (Kai): zuerst aus dem gewählten Gehege, wartende Schafe aus der Scheune rücken nach.
   // Das allerletzte Schaf der Farm kann man nicht verkaufen (-1), sonst gäbe es kein Geld mehr.
   G.sellSheep = function (t, n, i) {
-    var S = G.S, have = S.sheep[t] || 0; n = Math.min(n | 0, have); if (n <= 0) return 0;
+    var S = G.S, have = S.sheep[t] || 0, m0 = G.mutOf(t); n = Math.min(n | 0, have); if (n <= 0) return 0;
     if (G.sheepCount() - n < 1) return -1;
     var p = i != null ? S.pens[i] : null; if (p && p.t !== t) p = null;
     if (p) p.n -= Math.min(p.n, n);
@@ -210,7 +244,8 @@
     if (p && S.pens[i] === p && p.n < G.penCap(p.lvl)) p.n += Math.min(G.extras(t), G.penCap(p.lvl) - p.n);
     S.pens.forEach(function (q, k) { if (q && q.t === t && q.n <= 0) S.pens[k] = null; });
     G.fixPens();
-    var v = n * G.sellValue(t); G.earn(v); S.stats.sold = (S.stats.sold || 0) + n;
+    var m1 = G.mutOf(t), v = (n + (m0[0] - m1[0]) * (G.MUT.g.x - 1) + (m0[1] - m1[1]) * (G.MUT.r.x - 1)) * G.sellValue(t); // Mutationen bringen auch beim Verkaufen mehr
+    G.fixMut(); G.earn(v); S.stats.sold = (S.stats.sold || 0) + n;
     return v;
   };
   G.sellAll = function (t) {
@@ -261,8 +296,8 @@
     var pool = SI.TYPES.filter(function (x) { return x.r === r && (x.ev || null) === (b.ev || null); });
     if (!pool.length) pool = SI.TYPES.filter(function (x) { return x.r === r && !x.ev; });
     var t = rnd(pool);
-    var res = G.addSheep(t.id);
-    return { t: t, box: b, isNew: res.isNew, placed: res.placed, built: res.built, pen: res.pen };
+    var res = G.addSheep(t.id), mu = G.rollMut(), mnew = mu ? G.addMut(t.id, mu) : false;
+    return { t: t, box: b, isNew: res.isNew, placed: res.placed, built: res.built, pen: res.pen, mut: mu, mutNew: mnew };
   };
 
   // Turnier-Kiste: 3 zufällige Belohnungen (Schaf, Deko oder Münzen)
@@ -369,9 +404,9 @@
       if (Math.random() < 0.15 + G.cardBonus('hirte') / 100 && ri < 4) r = SI.RORDER[ri + 1]; // Hirtenstab: mehr Glück
       t = rnd(SI.TYPES.filter(function (x) { return x.r === r && !x.ev; }));
     }
-    var res = G.addSheep(t.id);
+    var res = G.addSheep(t.id), mu = G.rollMut(), mnew = mu ? G.addMut(t.id, mu) : false;
     G.S.breed = null; G.S.stats.breeds++;
-    return { t: t, isNew: res.isNew, placed: res.placed };
+    return { t: t, isNew: res.isNew, placed: res.placed, mut: mu, mutNew: mnew };
   };
 
   /* ---------- Tägliche Belohnung ---------- */
@@ -459,9 +494,11 @@
   // Nie ganz ohne etwas: Wer kein Schaf mehr hat, bekommt ein Wiesenschaf geschenkt.
   G.rescue = function () { if (G.sheepCount() > 0) return false; G.addSheep('wiese', 1); return true; };
 
+  var mutT = 0;
   G.tick = function (dt, visible) {
     if (!visible) return; // im Hintergrund oder geschlossen: kein Geld
     G.earn(G.income() * dt);
+    if ((mutT += dt) > 2) { mutT = 0; G.fixMut(); }
     if (visible) {
       G.S.playtime += dt;
       var c = G.cycle();

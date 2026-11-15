@@ -514,12 +514,16 @@
         if (pen.lvl >= 3) { A.drawPenItem(ctx, 'lantern', r.x + 10, r.y * K + 4); A.drawPenItem(ctx, 'lantern', r.x + r.w - 10, r.y * K + 4); }
         if (pen.lvl >= 4) A.drawPenItem(ctx, 'shelter', r.x + r.w - 40, (r.y + 46) * K);
         if (pen.lvl >= 5) A.drawPenItem(ctx, 'flag', r.x + 34, (r.y + 40) * K, SI.RAR[t.r].col);
-        var ags = (agents[i] || []).slice().sort(function (a, b) { return a.y - b.y; });
+        // Mutationen (Kai): die ersten Schafe im Gehege sind Regenbogen, dann glänzend
+        var pm = G.penMut(i), all = agents[i] || [];
+        all.forEach(function (a, j) { a.mu = j < pm[1] ? 'r' : j < pm[1] + pm[0] ? 'g' : null; });
+        var ags = all.slice().sort(function (a, b) { return a.y - b.y; });
         var zz = sleepsNow(pen.t, sleeping, owlSleep);
         ags.forEach(function (a, k) {
           var fr = zz ? 0 : (Math.floor(a.ph) % 2), hop = a.hop > 0 ? Math.sin((0.35 - a.hop) / 0.35 * Math.PI) * 10 : 0;
           var sx = r.x + a.x, sy = (r.y + a.y) * K - hop;
-          A.drawSheep2(ctx, t, sx, sy, fr, zz, 0.82, a.face < 0);
+          if (a.mu) A.drawMutSheep(ctx, a.mu, t, sx, sy, fr, zz, 0.82, a.face < 0, time + a.ph);
+          else A.drawSheep2(ctx, t, sx, sy, fr, zz, 0.82, a.face < 0);
           if (zz && k % 2 === 0) {
             var zp = (time * 0.5 + k * 0.3) % 1;
             ctx.globalAlpha = 1 - zp; ctx.font = (10 + zp * 7) + 'px "Lilita One", sans-serif'; ctx.textAlign = 'center';

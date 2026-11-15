@@ -106,7 +106,12 @@
             flash('#ffe066'); sparks(st, 50); confetti(md, 50, '#ffc21a'); SFX('star');
             ov.querySelector('#rvText').style.visibility = 'visible'; ov.querySelector('#rvBtns').style.visibility = 'visible';
           }, 700);
-        } else { im.className = 'pic'; im.src = o.pic; }
+        } else { im.className = 'pic' + (o.mut ? ' mut-' + o.mut : ''); im.src = o.pic; }
+        if (o.mut) setTimeout(function () { // Mutation: extra Glitzer und Ton
+          var md2 = ov.querySelector('.modal'); if (!md2) return;
+          SFX(o.mut === 'r' ? 'rainbow' : 'star'); sparks(st, o.mut === 'r' ? 70 : 40);
+          confetti(md2, o.mut === 'r' ? 90 : 45, G.MUT[o.mut].col); flash(o.mut === 'r' ? '#ff9cf0' : '#fff2a8');
+        }, 450);
         if (!o.card) { ov.querySelector('#rvText').style.visibility = 'visible'; ov.querySelector('#rvBtns').style.visibility = 'visible'; }
         var nt = ov.querySelector('.newtag'); if (nt) nt.hidden = false;
         var nr = ov.querySelector('.newribbon');
@@ -143,6 +148,7 @@
     var txt = c.k === 'technik' ? '−' + b + ' % Kosten' : c.k === 'hirte' ? '+' + b + ' % Glück und Tempo' : '+' + b + ' % ' + (c.k === 'gold' ? 'Geld' : 'Glück');
     return txt + (mx ? ' (max ' + mx + ' %)' : ' (ohne Grenze)');
   }
+  function mutName(t, mu) { return mu === 'g' ? 'Glänzendes ' + t.n : mu === 'r' ? 'Regenbogen-' + t.n : t.n; }
   function sheepReveal(res, again, label) {
     if (res.card) {
       var c = res.card, n = G.card(c.k), tot = c.per ? '<p class="num"><b>' + n + (n === 1 ? ' Karte' : ' Karten') + '</b> · zusammen ' + cardTotal(c) + '</p>' : '';
@@ -154,9 +160,12 @@
     var t = res.t, where = res.placed ? (res.built ? (G.pensOf(t.id).length > 1 ? ' · Gehege voll, ein weiteres Gehege wurde gebaut!' : ' · neues Gehege gebaut!') : '') : ' · wartet in der Scheune (kein Platz)';
     if (('elms'.indexOf(t.r) >= 0 || res.isNew || res.built) && res.placed) pendingBurst = [t.id, SI.RAR[t.r].col, res.pen];
     if (res.isNew) F.markNew(t.id);
-    reveal({ rc: SI.RAR[t.r].col, r: t.r, box: res.box ? A.boxURL(res.box.k) : A.boxURL('herz'), pic: A.sheepURL(t), isNew: res.isNew, newText: label === 'Baby · ' ? 'Neues Baby-Schaf!' : 'Neues Schaf entdeckt!', again: again,
-      big: 'lms'.indexOf(t.r) >= 0,
-      body: '<div class="rlabel">' + (label || '') + SI.RAR[t.r].n + '</div><h2>' + esc(t.n) + '</h2><p class="num">+' + fmt(t.inc) + ' Münzen pro Sek.' + where + '</p>' });
+    var mu = res.mut, mi = mu ? G.MUT[mu] : null;
+    reveal({ rc: SI.RAR[t.r].col, r: t.r, box: res.box ? A.boxURL(res.box.k) : A.boxURL('herz'), pic: mu ? A.mutURL(t, mu) : A.sheepURL(t), isNew: res.isNew, newText: label === 'Baby · ' ? 'Neues Baby-Schaf!' : 'Neues Schaf entdeckt!', again: again,
+      big: 'lms'.indexOf(t.r) >= 0, mut: mu,
+      body: (mu ? '<div class="mutbanner mb-' + mu + '">' + '<span>' + (mu === 'r' ? '🌈' : '✨') + '</span> ' + mi.n + '! ×' + mi.x + ' Geld</div>' : '') +
+        '<div class="rlabel">' + (label || '') + SI.RAR[t.r].n + '</div><h2>' + esc(mutName(t, mu)) + '</h2><p class="num">+' + fmt(t.inc * (mi ? mi.x : 1)) + ' Münzen pro Sek.' + where + '</p>' +
+        (res.mutNew ? '<p class="hint">Neu im Sammelbuch bei den Mutationen!</p>' : '') });
   }
   // Deko erst im Lager zeigen, wenn die Kiste ganz offen ist (Kai)
   var hiddenDeko = {};
@@ -506,7 +515,22 @@
   // Kai: Bei gezüchteten geheimen Schafen steht im Sammelbuch, wie man sie bekommt
   function recipeOf(id) { for (var k in SI.RECIPES) if (SI.RECIPES[k] === id) return k.split('+'); return null; }
   VIEWS.buch = function () {
-    var h = '<div class="tabs"><button class="' + (bookTab === 'schafe' ? 'on' : '') + '" data-act="book:schafe">Schafe</button><button class="' + (bookTab === 'deko' ? 'on' : '') + '" data-act="book:deko">Deko</button></div>';
+    var h = '<div class="tabs"><button class="' + (bookTab === 'schafe' ? 'on' : '') + '" data-act="book:schafe">Schafe</button><button class="' + (bookTab === 'mut' ? 'on' : '') + '" data-act="book:mut">Mutationen</button><button class="' + (bookTab === 'deko' ? 'on' : '') + '" data-act="book:deko">Deko</button></div>';
+    if (bookTab === 'mut') {
+      var MF = G.S.mutFound || {}, mt = SI.TYPES.length * 2, mn = Object.keys(MF).filter(function (k) { return T[k.split(':')[0]]; }).length;
+      h += '<div class="bar"><i style="width:' + (mn / mt * 100) + '%"></i></div><p class="hint num">' + mn + ' von ' + mt + ' Mutationen gefunden.</p>';
+      h += '<div class="card mutinfo"><p>✨ Glänzend bringt ×2 Geld und kommt in 2 % der Fälle.</p><p>🌈 Regenbogen bringt ×5 Geld, ist aber sehr selten (0,2 %).</p><p class="hint">Mutationen gibt es aus Kisten und beim Züchten.</p></div>';
+      SI.RORDER.forEach(function (r) {
+        h += '<h3 class="rc-' + r + '" style="font-size:17px">' + SI.RAR[r].n + '</h3><div class="grid">';
+        SI.TYPES.filter(function (t) { return t.r === r; }).sort(function (a, b) { return a.inc - b.inc; }).forEach(function (t) {
+          ['g', 'r'].forEach(function (k) {
+            var f = MF[t.id + ':' + k];
+            h += '<div class="tile' + (f ? ' mt-' + k : '') + '"><img' + (f ? ' class="mut-' + k + '"' : '') + ' src="' + (f ? A.mutURL(t, k) : A.sheepURL(t, true)) + '" alt=""><b>' + (f ? esc(mutName(t, k)) : '???') + '</b><small>' + (k === 'r' ? '🌈 ×5' : '✨ ×2') + '</small></div>';
+          });
+        });
+        h += '</div>';
+      });
+    } else
     if (bookTab === 'schafe') {
       var n = Object.keys(G.S.found).length;
       var sd = G.setsDone().length;
@@ -612,6 +636,9 @@
     h += '<div class="card"><div class="stats num"><span>Schafe im Gehege</span><b>' + p.n + ' / ' + cap + '</b>' + (mine.length > 1 ? '<span>Gehege mit ' + esc(t.n) + '</span><b>' + mine.length + ' Stück</b>' : '') + '<span>Stufe</span><b>' + p.lvl + ' / ' + G.MAXLVL + '</b>' +
       '<span>Gehege-Bonus</span><b>×' + G.penMult(p.lvl).toLocaleString('de-DE') + '</b><span>Nächste Stufe</span><b>' + (p.lvl < G.MAXLVL ? '+1 Platz, +25 % Geld, neues Aussehen' : '—') + '</b><span>Dieses Gehege macht</span><b id="penInc">+' + fmt(G.penIncome(i) * G.globalMult()) + ' pro Sek.</b></div>' +
       (p.lvl < G.MAXLVL ? costBtn(G.lvlCost(p.t, p.lvl), 'lvl:' + i, 'Ausbauen', 'go') : '<p class="hint">Höchste Stufe erreicht!</p>') + '</div>';
+    var pm = G.penMut(i);
+    if (pm[0] || pm[1]) h += '<div class="card mutcard">' + (pm[1] ? '<div class="mutrow"><img class="mut-r" src="' + A.mutURL(t, 'r') + '" alt=""><span><b>🌈 ' + pm[1] + '× Regenbogen</b><small>×5 Geld</small></span></div>' : '') +
+      (pm[0] ? '<div class="mutrow"><img class="mut-g" src="' + A.mutURL(t, 'g') + '" alt=""><span><b>✨ ' + pm[0] + '× Glänzend</b><small>×2 Geld</small></span></div>' : '') + '</div>';
     if (pull) h += '<div class="card"><h3>Hier ist Platz frei!</h3><p class="hint">' + (ex ? 'Es warten noch Schafe in der Scheune' : (mine.length > 2 ? 'In deinen anderen Gehegen' : 'In deinem anderen Gehege') + ' sind noch ' + esc(t.n) + 'e') + '. Hol sie hierher, dann verdienen sie mehr. Ein Gehege, das leer wird, wird abgebaut und der Platz ist wieder frei.</p><button class="btn go" data-act="pull:' + i + '">' + pull + '× hierher holen</button></div>';
     if (ex && !pull) h += '<div class="card"><h3>' + ex + ' Schaf' + (ex > 1 ? 'e warten' : ' wartet') + ' in der Scheune</h3><p class="hint">Alle Gehege sind voll. Baue ein neues Gehege, baue aus oder verkaufe die übrigen.</p>' +
       (fp >= 0 ? '<button class="btn" data-act="build:' + p.t + ':' + fp + '">Neues Gehege bauen</button>' : '') +
