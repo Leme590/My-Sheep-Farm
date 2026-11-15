@@ -56,8 +56,19 @@ end $$;
 
 create or replace function public.sp_save(p_token uuid, p_save jsonb, p_income double precision, p_playtime bigint, p_rebirths integer)
 returns boolean language plpgsql security definer set search_path = public as $$
+declare old jsonb;
 begin
   if octet_length(p_save::text) > 200000 then raise exception 'save_too_big'; end if;
+  select save into old from players where token = p_token for update;
+  if not found then raise exception 'bad_token'; end if;
+  -- Kai: Auf zwei Geräten gewinnt immer der höhere Spielstand. Ein kleinerer wird abgelehnt (false),
+  -- dann lädt das andere Gerät den besseren Stand aus der Cloud.
+  if old is not null and jsonb_typeof(old) = 'object' then
+    if coalesce(p_rebirths, 0) < coalesce((old->>'rebirths')::integer, 0)
+       or coalesce((p_save->>'total')::double precision, 0) < coalesce((old->>'total')::double precision, 0) then
+      return false;
+    end if;
+  end if;
   update players set save = p_save,
     income = greatest(0, least(coalesce(p_income, 0), 1e30)),
     playtime = greatest(0, coalesce(p_playtime, 0)),
@@ -926,3 +937,74 @@ begin
 end $$;
 
 grant execute on function public.sp_rename(uuid, text) to anon;
+
+-- ===================== Club-Einladungen (Teil 8) =====================
+-- Kai: Mitglieder können andere Spieler in ihren Club einladen. Der Eingeladene kann annehmen oder ablehnen.
+create table if not exists public.club_invites (
+  id          uuid primary key default gen_random_uuid(),
+  club        uuid not null references public.clubs(id) on delete cascade,
+  from_player uuid references public.players(id) on delete cascade,
+  to_player   uuid not null references public.players(id) on delete cascade,
+  created_at  timestamptz not null default now(),
+  unique (club, to_player)
+);
+create index if not exists club_invites_to on public.club_invites (to_player);
+alter table public.club_invites enable row level security;
+revoke all on public.club_invites from anon, authenticated;
+
+create or replace function public.sp_club_invite(p_token uuid, p_name text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare me players; them players; n int;
+begin
+  me := duel_me(p_token);
+  if me.club is null then raise exception 'club_none'; end if;
+  select * into them from players where lower(username) = lower(trim(coalesce(p_name, '')));
+  if them.id is null then raise exception 'no_player'; end if;
+  if them.id = me.id then raise exception 'invite_self'; end if;
+  if them.club = me.club then raise exception 'invite_member'; end if;
+  select count(*) into n from players where club = me.club;
+  if n >= 15 then raise exception 'club_full'; end if;
+  select count(*) into n from club_invites where club = me.club and created_at > now() - interval '1 day';
+  if n >= 30 then raise exception 'invite_many'; end if;
+  insert into club_invites (club, from_player, to_player) values (me.club, me.id, them.id)
+    on conflict (club, to_player) do update set from_player = excluded.from_player, created_at = now();
+  return true;
+end $$;
+
+-- Offene Einladungen an mich (alte nach 7 Tagen weg)
+create or replace function public.sp_club_invites(p_token uuid)
+returns table (id uuid, club uuid, name text, crest jsonb, members bigint, income double precision, from_name text) language plpgsql security definer set search_path = public as $$
+declare me players;
+begin
+  me := duel_me(p_token);
+  delete from club_invites i where i.to_player = me.id and (i.created_at < now() - interval '7 days' or i.club = me.club);
+  return query select i.id, c.id, c.name, c.crest,
+      (select count(*) from players p where p.club = c.id),
+      (select coalesce(sum(p.income), 0) from players p where p.club = c.id),
+      f.username
+    from club_invites i join clubs c on c.id = i.club left join players f on f.id = i.from_player
+    where i.to_player = me.id order by i.created_at desc limit 20;
+end $$;
+
+-- Einladung annehmen (true) oder ablehnen (false)
+create or replace function public.sp_club_answer(p_token uuid, p_id uuid, p_yes boolean)
+returns json language plpgsql security definer set search_path = public as $$
+declare me players; inv club_invites; n int;
+begin
+  me := duel_me(p_token);
+  delete from club_invites where id = p_id and to_player = me.id returning * into inv;
+  if inv.id is null then raise exception 'invite_gone'; end if;
+  if not coalesce(p_yes, false) then return null; end if;
+  if me.club is not null then raise exception 'club_already'; end if;
+  perform 1 from clubs where id = inv.club for update;
+  if not found then raise exception 'club_gone'; end if;
+  select count(*) into n from players where club = inv.club;
+  if n >= 15 then raise exception 'club_full'; end if;
+  update players set club = inv.club, club_since = now() where id = me.id;
+  delete from club_invites where to_player = me.id and club = inv.club;
+  return club_view(inv.club, me.id);
+end $$;
+
+grant execute on function public.sp_club_invite(uuid, text) to anon;
+grant execute on function public.sp_club_invites(uuid) to anon;
+grant execute on function public.sp_club_answer(uuid, uuid, boolean) to anon;

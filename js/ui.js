@@ -238,19 +238,22 @@
   });
 
   /* ---------- Spiel starten ---------- */
+  function score(d) { return [(d && d.rebirths) || 0, (d && d.total) || 0]; }
+  function better(a, b) { var x = score(a), y = score(b); return x[0] !== y[0] ? x[0] > y[0] : x[1] > y[1]; }
   function backupKey() { return 'schaf_backup_' + me.username.toLowerCase(); }
   function enterGame(s, cloudSave) {
     me = s;
     var local = N.lsGet(backupKey(), null);
     var use = cloudSave;
-    if (local && local.v === 2 && (!use || (local.lastSave || 0) > (use.lastSave || 0) + 2000)) use = local;
+    // Kai: Der höhere Spielstand gewinnt (mehr Rebirths, sonst mehr insgesamt verdient)
+    if (local && local.v === 2 && (!use || better(local, use))) use = local;
     G.adopt(use);
     $('#login').hidden = true;
     ['#hud', '#nav', '#zoom'].forEach(function (k) { $(k).hidden = false; });
     F.farmName = me.username + 's Farm';
     if (!started) {
       started = true;
-      F.cb = { pop: pop, toast: toast, change: refresh, pen: openPen, empty: openEmpty, dekoTap: dekoTap, moved: dekoMoved, penMoved: penMoved, house: function () { openSheet('mehr'); },
+      F.cb = { pop: pop, toast: toast, change: refresh, pen: openPen, empty: openEmpty, dekoTap: dekoTap, moved: dekoMoved, penMoved: penMoved, house: function () { openSheet('scheune'); },
         place: placeDeko, pickup: pickupDeko, merchant: spawnMerchant, merchantTap: function () { SFX('merchant'); if (G.merch && G.merch.hide) { G.merch.hide = false; renderMerchant(); } openSheet('boxen'); }, busy: function () { return modalOpen || !!G.visiting; } };
       F.init($('#farm'));
       setInterval(tick, 250);
@@ -277,11 +280,23 @@
   function saveCloud() {
     if (!me || cloudBusy || G.visiting) return; cloudBusy = true; lastCloud = Date.now();
     G.S.lastSave = Date.now();
-    N.save(me.token, G.S, G.fullIncome(), G.S.playtime, G.S.rebirths).catch(function (e) {
+    N.save(me.token, G.S, G.fullIncome(), G.S.playtime, G.S.rebirths).then(function (ok) {
+      if (ok === false) return pullBetter();
+    }).catch(function (e) {
       if ((e && e.message || '').indexOf('bad_token') >= 0) { N.setSession(null); toast('Bitte melde dich neu an.'); }
     }).then(function () { cloudBusy = false; });
   }
-  document.addEventListener('visibilitychange', function () { if (document.hidden) { saveLocal(); saveCloud(); } });
+  // Auf einem anderen Gerät ist der Spielstand weiter: den besseren Stand laden
+  function pullBetter() {
+    var tok = me && me.token;
+    return N.load(tok).then(function (d) {
+      if (!me || me.token !== tok || G.visiting || !d || !d.save || !better(d.save, G.S)) return;
+      var merch = G.merch; G.adopt(d.save); G.merch = merch;
+      F.visitReset(); saveLocal(); closeSheet(); refresh();
+      toast('Dein Spielstand vom anderen Gerät wurde geladen.');
+    });
+  }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) { saveLocal(); saveCloud(); } else if (me && !G.visiting) { pullBetter().catch(function () {}); } });
   window.addEventListener('pagehide', function () { saveLocal(); saveCloud(); });
 
   /* ---------- Takt ---------- */
@@ -355,7 +370,7 @@
   }
 
   /* ---------- Blätter ---------- */
-  var SHEET_SND = { code: 'settings', admin: 'trumpet', boxen: 'chest', deko: 'chime', zucht: 'heart', buch: 'page', mehr: 'pop', board: 'trumpet', settings: 'settings', pen: 'gate', empty: 'pop' };
+  var SHEET_SND = { code: 'settings', admin: 'trumpet', boxen: 'chest', deko: 'chime', zucht: 'love', buch: 'page', mehr: 'pop', board: 'trumpet', settings: 'settings', pen: 'gate', empty: 'pop', scheune: 'gate' };
   function openSheet(name, arg) {
     if (name === 'admin' && me && me.admin) loadCodes();
     if (!sheet || sheet.name !== name) SFX(SHEET_SND[name] || 'tab');
@@ -402,20 +417,31 @@
   function tagR(r, txt) { return '<span class="tag rc-' + r + '">' + (txt || SI.RAR[r].n) + '</span>'; }
 
   var VIEWS = {};
+  // Kai: Die Chancen zusammen (Schafe und Karte) ergeben genau 100 %. Erst wird die Karte gewürfelt,
+  // sonst ein Schaf. Gerundet auf eine Nachkommastelle, der Rest geht an die größten Reste.
+  function oddsChips(b) {
+    var tot = 0, k, keys = Object.keys(b.odds), card = b.card || 0;
+    for (k in b.odds) tot += b.odds[k];
+    var raw = keys.map(function (r) { return b.odds[r] / tot * (100 - card) * 10; }).concat([card * 10]);
+    var fl = raw.map(Math.floor), left = 1000 - fl.reduce(function (a, x) { return a + x; }, 0);
+    raw.map(function (x, i) { return [x - fl[i], i]; }).sort(function (a, c) { return c[0] - a[0]; }).slice(0, left).forEach(function (e) { fl[e[1]]++; });
+    var dec = SI.i18n && SI.i18n.lang === 'en' ? '.' : ',';
+    var pc = function (x) { return (x % 10 ? Math.floor(x / 10) + dec + (x % 10) : String(x / 10)) + ' %'; };
+    return keys.map(function (r, i) { return tagR(r, SI.RAR[r].n + ' ' + pc(fl[i])); }).join('') + (card ? '<span class="tag" style="color:#c98a12">Karte ' + pc(fl[keys.length]) + '</span>' : '');
+  }
   VIEWS.boxen = function () {
     var h = '';
     var barn = G.barn();
-    if (barn.length) h += '<div class="card"><h3>In der Scheune: ' + barn.length + ' Sorte' + (barn.length > 1 ? 'n' : '') + '</h3><p class="hint">Diese Schafe haben kein Gehege und verdienen nichts. Tippe auf der Farm auf einen freien Platz oder reiße ein Gehege ab.</p></div>';
+    if (barn.length) h += '<div class="card"><h3>In der Scheune: ' + barn.length + ' Sorte' + (barn.length > 1 ? 'n' : '') + '</h3><p class="hint">Diese Schafe haben kein Gehege und verdienen nichts. Tippe auf der Farm auf die Scheune, um sie zu verkaufen oder ihnen ein Gehege zu bauen.</p><button class="btn blue" data-act="sheet:scheune">Zur Scheune</button></div>';
     // Taco Tuesday: Nacho-Box ganz oben
     if (G.isTaco()) {
       var nb = SI.NACHO;
       h += '<div class="boxcard bx-nacho taco"><img src="' + A.boxURL('nacho') + '" alt=""><div style="min-width:0"><div class="tacotag">🌮 Nur heute: Taco Tuesday!</div><h3>' + esc(nb.n) + '</h3>' +
-        '<div class="odds">' + tagR('e', 'Episch 60 %') + tagR('l', 'Legendär 35 %') + tagR('m', 'Mythisch 5 %') + '<span class="tag" style="color:#c98a12">Karte ' + nb.card + ' %</span></div>' +
+        '<div class="odds">' + oddsChips(nb) + '</div>' +
         costBtn(G.boxPrice('nacho'), 'open:nacho', 'Öffnen') + '</div></div>';
     } else h += '<p class="hint center">🌮 Jeden Dienstag ist Taco Tuesday mit der Nacho-Box!</p>';
     SI.BOX.forEach(function (b) {
-      var tot = 0, k; for (k in b.odds) tot += b.odds[k];
-      var chips = Object.keys(b.odds).map(function (r) { return tagR(r, SI.RAR[r].n + ' ' + Math.round(b.odds[r] / tot * 100) + ' %'); }).join('') + '<span class="tag" style="color:#c98a12">Karte ' + b.card + ' %</span>';
+      var chips = oddsChips(b);
       if (!G.boxUnlocked(b.k)) {
         h += '<div class="boxcard locked bx-' + b.k + '"><div class="lockimg"><img src="' + A.boxURL(b.k) + '" alt=""><span class="padlock">🔒</span></div><div style="min-width:0"><h3>' + esc(b.n) + '</h3><div class="odds">' + chips + '</div><div class="lockmsg">Ab Rebirth ' + b.rb + ' freigeschaltet</div></div></div>';
         return;
@@ -477,16 +503,22 @@
       (G.card('hirte') ? ' Dein Hirtenstab gibt dir +' + G.cardBonus('hirte') + ' % Glück und macht die Zucht ' + G.cardBonus('hirte') + ' % schneller.' : '') + '</p>';
     return { title: 'Zuchtstation', html: h };
   };
+  // Kai: Bei gezüchteten geheimen Schafen steht im Sammelbuch, wie man sie bekommt
+  function recipeOf(id) { for (var k in SI.RECIPES) if (SI.RECIPES[k] === id) return k.split('+'); return null; }
   VIEWS.buch = function () {
     var h = '<div class="tabs"><button class="' + (bookTab === 'schafe' ? 'on' : '') + '" data-act="book:schafe">Schafe</button><button class="' + (bookTab === 'deko' ? 'on' : '') + '" data-act="book:deko">Deko</button></div>';
     if (bookTab === 'schafe') {
       var n = Object.keys(G.S.found).length;
+      var sd = G.setsDone().length;
       h += '<div class="bar"><i style="width:' + (n / SI.TYPES.length * 100) + '%"></i></div><p class="hint num">' + n + ' von ' + SI.TYPES.length + ' Schafen gefunden. Geheime Schafe gibt es nur durch Zucht.</p>';
+      h += '<div class="card setbonus"><b>✨ Sammel-Bonus: +' + Math.round(G.setBonus() * 100) + ' % Geld</b><p class="hint">Für jede Seltenheit, bei der du alle Schafe gefunden hast, bekommst du +10 % Geld.</p></div>';
       SI.RORDER.forEach(function (r) {
-        h += '<h3 class="rc-' + r + '" style="font-size:17px">' + SI.RAR[r].n + '</h3><div class="grid">';
-        SI.TYPES.filter(function (t) { return t.r === r; }).sort(function (a, b) { return a.inc - b.inc; }).forEach(function (t) { // wenigstes Geld zuerst
-          var f = G.S.found[t.id];
-          h += '<div class="tile"><img src="' + A.sheepURL(t, !f) + '" alt=""><b>' + (f ? esc(t.n) : '???') + '</b><small class="num">' + (f ? '+' + fmt(t.inc) + '/Sek. · ' + esc(t.pen.name) : (t.r === 's' ? 'Geheim! Nur durch Zucht' : 'noch nicht gefunden')) + '</small></div>';
+        var all = SI.TYPES.filter(function (t) { return t.r === r; }), got = all.filter(function (t) { return G.S.found[t.id]; }).length, done = got === all.length;
+        h += '<h3 class="rc-' + r + ' sethd" style="font-size:17px">' + SI.RAR[r].n + ' <small class="num' + (done ? ' setok' : '') + '">' + (done ? '✓ +10 % Geld' : got + ' / ' + all.length) + '</small></h3><div class="grid">';
+        all.sort(function (a, b) { return a.inc - b.inc; }).forEach(function (t) { // wenigstes Geld zuerst
+          var f = G.S.found[t.id], rec = t.r === 's' && f ? recipeOf(t.id) : null;
+          h += '<div class="tile"><img src="' + A.sheepURL(t, !f) + '" alt=""><b>' + (f ? esc(t.n) : '???') + '</b><small class="num">' + (f ? '+' + fmt(t.inc) + '/Sek. · ' + esc(t.pen.name) : (t.r === 's' ? 'Geheim! Nur durch Zucht' : 'noch nicht gefunden')) + '</small>' +
+            (rec ? '<div class="recipe"><img src="' + A.sheepURL(T[rec[0]]) + '" alt=""><span>+</span><img src="' + A.sheepURL(T[rec[1]]) + '" alt=""></div><small class="rectx">' + esc(T[rec[0]].n) + ' + ' + esc(T[rec[1]].n) + '</small>' : '') + '</div>';
         });
         h += '</div>';
       });
@@ -612,6 +644,24 @@
         .then(function () { if (sheet && sheet.name === 'board') renderSheet(); });
     }, 400);
   }
+  // Kai: Die Scheune zeigt alle Schafe ohne Gehege. Dort kann man sie verkaufen oder ihnen ein Gehege bauen.
+  VIEWS.scheune = function () {
+    var barn = G.barn().sort(function (a, b) { return T[b].inc - T[a].inc; }), fp = G.freePlot(), h = '';
+    var all = barn.reduce(function (a, k) { return a + G.extras(k); }, 0), worth = barn.reduce(function (a, k) { return a + G.extras(k) * G.sellValue(k); }, 0);
+    h += '<div class="card barnhead"><img src="' + A.barnURL() + '" alt=""><div><h3>' + (all ? all + (all === 1 ? ' Schaf wartet' : ' Schafe warten') + ' hier' : 'Die Scheune ist leer') + '</h3>' +
+      '<p class="hint">' + (all ? 'Diese Schafe haben kein Gehege und verdienen nichts. Baue ihnen ein Gehege oder verkaufe sie.' : 'Alle deine Schafe wohnen in Gehegen. Wenn kein Platz mehr frei ist, warten neue Schafe hier.') + '</p></div></div>';
+    barn.forEach(function (k) {
+      var t = T[k], n = G.extras(k), sv = G.sellValue(k), sn = [1, 5, 10].filter(function (x) { return x < n; });
+      h += '<div class="card barnrow"><div class="barnsh"><img src="' + A.sheepURL(t) + '" alt=""><div><h3><span class="rc-' + t.r + '">' + esc(t.n) + '</span> <span class="num">× ' + n + '</span></h3>' +
+        '<p class="hint"><span class="rc-' + t.r + '">' + SI.RAR[t.r].n + '</span> · 1 Schaf bringt <b class="num">+' + fmt(sv) + '</b> Münzen</p></div></div>' +
+        (fp >= 0 ? '<button class="btn go" data-act="build:' + k + ':' + fp + '">Neues Gehege bauen</button>' : '') +
+        '<div class="sellbtns">' + sn.map(function (x) { return '<button class="btn coin" data-act="bsell:' + k + ':' + x + '">' + x + '× · +' + fmt(x * sv) + '</button>'; }).join('') +
+        '<button class="btn red" data-act="bsell:' + k + ':' + n + '">Alle ' + n + '× · +' + fmt(n * sv) + '</button></div></div>';
+    });
+    if (barn.length > 1) h += '<button class="btn red wide" data-act="bsellAll">Alle verkaufen · +' + fmt(worth) + '</button>';
+    if (all && fp < 0) h += '<p class="hint center">Alle Plätze sind belegt. Mit einem Rebirth bekommst du mehr Platz.</p>';
+    return { title: 'Scheune', html: h };
+  };
   VIEWS.settings = function () {
     var X = SI.sfx, so = X.on(), mu = X.musicOn();
     function row(title, desc, act, onv, slAct, val, col) {
@@ -885,7 +935,7 @@
     if (e.target.id === 'sheet') { closeSheet(); SFX('close'); return; }
     var el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
     var parts = el.dataset.act.split(':'), a = parts[0], arg = parts[1];
-    if (['open', 'again', 'deko', 'close', 'closeSheet', 'collect', 'claimDaily', 'rebirth', 'lvl', 'breed', 'sound', 'music', 'sheet', 'board', 'book', 'pick', 'unpick', 'sellEx', 'sell', 'sellYes', 'demolishYes', 'mjump'].indexOf(a) < 0) SFX(el.classList.contains('nb') ? 'tab' : 'click');
+    if (['open', 'again', 'deko', 'close', 'closeSheet', 'collect', 'claimDaily', 'rebirth', 'lvl', 'breed', 'sound', 'music', 'sheet', 'board', 'book', 'pick', 'unpick', 'sellEx', 'sell', 'sellYes', 'bsell', 'bsellYes', 'bsellAll', 'bsellAllYes', 'demolishYes', 'mjump'].indexOf(a) < 0) SFX(el.classList.contains('nb') ? 'tab' : 'click');
     var res, i, v;
     switch (a) {
       case 'ltab': setLMode(arg); break;
@@ -958,6 +1008,33 @@
         SFX('sell'); pop(innerWidth / 2, innerHeight / 2, '+' + fmt(got)); toast('Verkauft für ' + fmt(got) + ' Münzen');
         if (G.S.pens[i]) renderSheet(); else closeSheet();
         saveLocal(); refresh(); break;
+      case 'bsell': case 'bsellYes': {
+        var bt = arg, bn = Math.min(+parts[2] | 0, G.extras(bt)); if (!T[bt] || bn <= 0) break;
+        if (a === 'bsellYes') nextModal();
+        if (G.sheepCount() - bn < 1) { SFX('cant'); toast('Dein letztes Schaf kannst du nicht verkaufen.'); break; }
+        if (a === 'bsell' && ('elms'.indexOf(T[bt].r) >= 0 || bn >= 10)) {
+          modal('<div class="modal"><img src="' + A.sheepURL(T[bt]) + '" alt="" style="width:120px;height:106px;align-self:center"><h2>Wirklich verkaufen?</h2>' +
+            '<p><b>' + bn + '× ' + esc(T[bt].n) + '</b> für <b class="num">+' + fmt(bn * G.sellValue(bt)) + '</b> Münzen.</p><p class="hint">Verkaufte Schafe kommen nicht zurück.</p>' +
+            '<div class="btns"><button class="btn ghost" data-act="close">Abbrechen</button><button class="btn red" data-act="bsellYes:' + bt + ':' + bn + '">Verkaufen</button></div></div>');
+          break;
+        }
+        v = G.sellSheep(bt, bn, null); if (v <= 0) break;
+        SFX('sell'); pop(innerWidth / 2, innerHeight / 2, '+' + fmt(v)); toast('Verkauft für ' + fmt(v) + ' Münzen');
+        saveLocal(); refresh(); break;
+      }
+      case 'bsellAll': case 'bsellAllYes': {
+        var bl = G.barn(), bw = bl.reduce(function (s2, k) { return s2 + G.extras(k) * G.sellValue(k); }, 0), bc = bl.reduce(function (s2, k) { return s2 + G.extras(k); }, 0);
+        if (!bl.length) break;
+        if (a === 'bsellAll') {
+          modal('<div class="modal"><h2>Alle verkaufen?</h2><p><b>' + bc + ' Schafe</b> aus der Scheune für <b class="num">+' + fmt(bw) + '</b> Münzen.</p><p class="hint">Verkaufte Schafe kommen nicht zurück.</p>' +
+            '<div class="btns"><button class="btn ghost" data-act="close">Abbrechen</button><button class="btn red" data-act="bsellAllYes">Verkaufen</button></div></div>');
+          break;
+        }
+        nextModal(); v = 0;
+        bl.forEach(function (k) { var x = G.sellSheep(k, G.extras(k), null); if (x > 0) v += x; });
+        if (v > 0) { SFX('sell'); pop(innerWidth / 2, innerHeight / 2, '+' + fmt(v)); toast('Verkauft für ' + fmt(v) + ' Münzen'); }
+        saveLocal(); refresh(); break;
+      }
       case 'sellEx': SFX('sell'); v = G.sellExtras(arg); toast('Verkauft für ' + fmt(v) + ' Münzen'); saveLocal(); refresh(); break;
       case 'demolish':
         modal('<div class="modal"><h2>Gehege abreißen?</h2><p>Die Schafe ziehen in die Scheune und verdienen dort nichts, bis sie wieder ein Gehege bekommen. Der Ausbau geht dabei verloren.</p>' +

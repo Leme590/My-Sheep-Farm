@@ -181,6 +181,12 @@
     // Deko-Menü: Windspiel
     chime: function () { [0, 1, 2, 3].forEach(function (i) { clink(i * 0.11 + Math.random() * 0.05, [1320, 1570, 1760, 2090][i], 0.05, 1.4); }); },
     // Zucht-Menü: Herzklopfen
+    // Zucht öffnen (Kai): Harfe nach oben, dann rufen sich zwei Schafe zu
+    love: function () {
+      [67, 71, 74, 79, 83, 86].forEach(function (n, i) { tone(N(n), 0.9, { type: 'triangle', vol: 0.07, at: i * 0.05, a: 0.003 }); });
+      tone(N(91), 0.8, { type: 'sine', vol: 0.06, at: 0.32 }); sparkle(0.3, 5);
+      baa(300, 0.28); setTimeout(function () { try { baa(420, 0.24); } catch (e) { /* egal */ } }, 380);
+    },
     heart: function () { [0, 0.18, 0.75, 0.93].forEach(function (a, i) { tone(i % 2 ? 55 : 68, 0.14, { type: 'sine', vol: 0.45, to: 38, at: a, a: 0.004 }); }); },
     // Mehr-Menü: Plopp
     pop: function () { swish(0, 0.22, 900, 3000, 0.12); knock(0.16, 230, 0.12); },

@@ -98,7 +98,7 @@ window.SI = window.SI || {};
     { k: 'gold', n: 'Goldkiste', cost: 7.2e6, odds: { r: 30, e: 60, l: 9.5, m: 0.5 }, card: 14, col: '#f2b632', rb: 1 },
     { k: 'kristall', n: 'Kristallkiste', cost: 1.5e8, odds: { e: 55, l: 42, m: 3 }, card: 15, col: '#a98bff', rb: 2 },
     { k: 'regen', n: 'Regenbogenkiste', cost: 5e9, odds: { e: 20, l: 68, m: 12 }, card: 15, col: 'rainbow', rb: 3 },
-    { k: 'galaxie', n: 'Galaxiekiste', cost: 3e11, odds: { l: 55, m: 45 }, card: 15, col: '#2a1f6b', rb: 4 }
+    { k: 'galaxie', n: 'Galaxiekiste', cost: 3e11, odds: { l: 55, m: 45 }, card: 4, col: '#2a1f6b', rb: 4 }
   ];
 
   SI.BK = {};

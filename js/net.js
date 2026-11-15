@@ -24,6 +24,11 @@
     club_full: 'Dieser Club ist voll (15 Mitglieder).',
     club_gone: 'Diesen Club gibt es nicht mehr.',
     club_not_owner: 'Nur der Chef vom Club darf das Wappen ändern.',
+    club_none: 'Du bist in keinem Club.',
+    invite_self: 'Dich selbst kannst du nicht einladen.',
+    invite_member: 'Dieser Spieler ist schon in deinem Club.',
+    invite_many: 'Dein Club hat heute schon genug Einladungen verschickt.',
+    invite_gone: 'Diese Einladung gibt es nicht mehr.',
     heart_self: 'Deiner eigenen Farm kannst du kein Herz geben.',
     heart_done: 'Dieser Farm hast du heute schon ein Herz gegeben.',
     bad_amount: 'Bitte gib einen gültigen Betrag ein.',
@@ -109,7 +114,9 @@
     },
     save: function (tok, save, income, playtime, rebirths) {
       var f = LOCAL.find(tok); if (!f) return Promise.reject(new Error('bad_token'));
-      var acc = f.a[f.k]; acc.save = save; acc.income = income; acc.playtime = playtime; acc.rebirths = rebirths;
+      var acc = f.a[f.k], o = acc.save;
+      if (o && typeof o === 'object' && ((rebirths || 0) < (o.rebirths || 0) || (save.total || 0) < (o.total || 0))) return Promise.resolve(false);
+      acc.save = JSON.parse(JSON.stringify(save)); acc.income = income; acc.playtime = playtime; acc.rebirths = rebirths;
       LOCAL.put(f.a); return Promise.resolve(true);
     },
     inbox: function (tok) {
@@ -551,6 +558,35 @@
         LC.put(cl); return true;
       });
     },
+    // Einladungen (Test-Modus: im Speicher dieses Geräts)
+    invite: function (tok, name) {
+      return LC.run(tok, function (f) {
+        var a = f.a, cid = a[f.k].club; if (!cid || !LC.all()[cid]) throw new Error('club_none');
+        var k = keyOf(a, String(name || '').trim()); if (!k || !a[k]) throw new Error('no_player');
+        if (k === f.k) throw new Error('invite_self');
+        if (a[k].club === cid) throw new Error('invite_member');
+        if (LC.members(cid, a).length >= 15) throw new Error('club_full');
+        var inv = lsGet('schaf_cinv', []).filter(function (x) { return !(x.club === cid && x.to === k); });
+        inv.push({ id: uid(), club: cid, from: a[f.k].username, to: k, t: Date.now() }); lsSet('schaf_cinv', inv); return true;
+      });
+    },
+    invites: function (tok) {
+      return LC.run(tok, function (f) {
+        var cl = LC.all(), my = f.a[f.k].club;
+        return lsGet('schaf_cinv', []).filter(function (x) { return x.to === f.k && cl[x.club] && x.club !== my; }).map(function (x) {
+          var r = LC.rows().filter(function (y) { return y.id === x.club; })[0] || { members: 0, income: 0 };
+          return { id: x.id, club: x.club, name: cl[x.club].name, crest: cl[x.club].crest, members: r.members, income: r.income, from_name: x.from };
+        });
+      });
+    },
+    answer: function (tok, id, yes) {
+      return LC.run(tok, function (f) {
+        var inv = lsGet('schaf_cinv', []), x = inv.filter(function (y) { return y.id === id && y.to === f.k; })[0];
+        if (!x) throw new Error('invite_gone');
+        lsSet('schaf_cinv', inv.filter(function (y) { return y !== x && !(yes && y.to === f.k && y.club === x.club); }));
+        return yes ? x.club : null;
+      }).then(function (cid) { return cid ? LCL.join(tok, cid) : null; });
+    },
     crest: function (tok, crest) {
       return LC.run(tok, function (f) {
         var id = f.a[f.k].club, cl = LC.all(), c = cl[id];
@@ -628,6 +664,9 @@
     leave: function (tok) { return ONLINE ? rpc('sp_club_leave', { p_token: tok }) : LCL.leave(tok); },
     crest: function (tok, crest) { return ONLINE ? rpc('sp_club_crest', { p_token: tok, p_crest: crestOk(crest) }) : LCL.crest(tok, crest); },
     racer: function (tok, r) { return ONLINE ? rpc('sp_club_racer', { p_token: tok, p_racer: racerOk(r) }) : LCL.racer(tok, r); },
+    invite: function (tok, name) { return ONLINE ? rpc('sp_club_invite', { p_token: tok, p_name: name }) : LCL.invite(tok, name); },
+    invites: function (tok) { return ONLINE ? rpc('sp_club_invites', { p_token: tok }).then(function (r) { return r || []; }) : LCL.invites(tok); },
+    answer: function (tok, id, yes) { return ONLINE ? rpc('sp_club_answer', { p_token: tok, p_id: id, p_yes: !!yes }) : LCL.answer(tok, id, yes); },
     board: function () { return ONLINE ? rpc('sp_club_board', {}).then(function (r) { return r || []; }) : LCL.board(); }
   };
 

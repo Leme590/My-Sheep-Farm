@@ -1154,35 +1154,62 @@
     }, { ol: 1.6 });
   };
   A.drawTree = function (ctx, k, x, y) { A.blit(ctx, A.treeSpr(k), x, y, 1.25, false, [18, 5]); };
+  // Kai: Die Scheune sieht jetzt wie eine richtige rote Scheune aus (Mansarddach, große Tore mit weißem X, Heuboden, Wetterhahn)
   A.houseSpr = function (time, night) {
     var fr = Math.floor((time % 4) / 4 * 8);
-    return sprite('hs|' + fr + (night ? 1 : 0), [-64, -142, 64, 4], function (g) {
-      // Wände
-      g.beginPath(); rrect(g, -52, -60, 104, 60, 3); sfill(g, '#fff1d6', 1.6);
-      g.fillStyle = '#ecd4a8'; g.fillRect(-52, -12, 104, 12);
-      for (var i = -44; i < 52; i += 12) { g.fillStyle = 'rgba(160,110,60,.15)'; g.fillRect(i, -60, 1.5, 48); }
-      // Dach
-      g.beginPath(); g.moveTo(-62, -56); g.lineTo(-40, -96); g.lineTo(40, -96); g.lineTo(62, -56); g.closePath(); sfill(g, '#d8432f', 1.8);
-      g.strokeStyle = '#a83020'; g.lineWidth = 1.6;
-      for (var r = 0; r < 4; r++) { var yy = -62 - r * 9; g.beginPath(); g.moveTo(-58 + r * 5, yy); g.lineTo(58 - r * 5, yy); g.stroke(); }
-      g.fillStyle = 'rgba(255,255,255,.25)'; poly(g, [-40, -96, 40, -96, 44, -90, -44, -90]);
-      // Schornstein
-      g.beginPath(); rrect(g, 26, -112, 13, 22, 2); sfill(g, '#a8553a', 1.4); g.fillStyle = '#6b3424'; g.fillRect(25, -114, 15, 4);
-      // Fenster
-      var win = night ? '#ffd86b' : '#8fd3ff';
-      [[-41, -46], [21, -46]].forEach(function (p) {
-        g.beginPath(); rrect(g, p[0], p[1], 21, 19, 3); sfill(g, '#ffffff', 1.4);
-        g.fillStyle = win; g.fillRect(p[0] + 2.5, p[1] + 2.5, 16, 14);
-        g.fillStyle = '#ffffff'; g.fillRect(p[0] + 9.5, p[1] + 2.5, 2, 14); g.fillRect(p[0] + 2.5, p[1] + 8.5, 16, 2);
-        g.beginPath(); rrect(g, p[0] - 2, p[1] + 18, 25, 5, 2); sfill(g, '#8a5a32', 1.1);
-        g.fillStyle = '#ff5f8a'; circ(g, p[0] + 4, p[1] + 18, 2.2); g.fillStyle = '#ffd23f'; circ(g, p[0] + 11, p[1] + 17.5, 2.2); g.fillStyle = '#ffffff'; circ(g, p[0] + 18, p[1] + 18, 2.2);
+    return sprite('barn|' + fr + (night ? 1 : 0), [-66, -146, 66, 4], function (g) {
+      var RED = '#c8382c', DRK = '#8f2219', TRIM = '#fff7ea', ROOF = '#5b4a45';
+      // Heuballen rechts
+      g.beginPath(); rrect(g, 44, -16, 20, 16, 4); sfill(g, '#f2c94c', 1.3);
+      line(g, [48, -16, 48, 0], '#c99a2a', 1.2); line(g, [60, -16, 60, 0], '#c99a2a', 1.2);
+      // Giebelwand im Mansard-Umriss
+      var wall = [-52, 0, -52, -58, -42, -90, 0, -108, 42, -90, 52, -58, 52, 0];
+      g.beginPath(); g.moveTo(wall[0], wall[1]); for (var i = 2; i < wall.length; i += 2) g.lineTo(wall[i], wall[i + 1]); g.closePath(); sfill(g, RED, 1.8);
+      // senkrechte Bretter
+      g.save(); g.clip();
+      for (var x = -48; x < 52; x += 7) { g.fillStyle = 'rgba(80,10,5,.22)'; g.fillRect(x, -110, 1.3, 110); }
+      g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(-52, -110, 24, 110);
+      g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(-52, -6, 104, 6);
+      g.restore();
+      // Dach als dicke Kante mit Schindeln, dazu weiße Zierleiste
+      line(g, [-60, -55, -46, -92, 0, -114, 46, -92, 60, -55], OUT, 11);
+      line(g, [-60, -55, -46, -92, 0, -114, 46, -92, 60, -55], ROOF, 8);
+      g.setLineDash([3, 4]); line(g, [-59, -56, -45, -91, 0, -112, 45, -91, 59, -56], '#3e312d', 1.4); g.setLineDash([]);
+      line(g, [-51, -58, -41.5, -88, 0, -105, 41.5, -88, 51, -58], TRIM, 2.6);
+      // weiße Ecken
+      line(g, [-50.5, -2, -50.5, -57], TRIM, 3); line(g, [50.5, -2, 50.5, -57], TRIM, 3);
+      // Heuboden-Tür mit Heu (nachts leuchtet es warm)
+      g.beginPath(); rrect(g, -11, -86, 22, 20, 2); sfill(g, TRIM, 1.4);
+      g.fillStyle = night ? '#ffcf5a' : '#3a1d14'; g.fillRect(-8, -83, 16, 15);
+      g.fillStyle = '#f2c94c'; poly(g, [-8, -68, -6, -73, -3, -69, 0, -74, 3, -69, 6, -73, 8, -68]);
+      line(g, [-14, -88, 14, -88], ROOF, 3); g.fillStyle = '#8a8a8a'; circ(g, 0, -92, 2.2); // Rolle für den Heuhaken
+      // kleine Fenster links und rechts
+      [-36, 24].forEach(function (wx) {
+        g.beginPath(); rrect(g, wx, -50, 12, 12, 1.5); sfill(g, TRIM, 1.2);
+        g.fillStyle = night ? '#ffd86b' : '#8fd3ff'; g.fillRect(wx + 2, -48, 8, 8);
+        g.fillStyle = TRIM; g.fillRect(wx + 5.4, -48, 1.2, 8); g.fillRect(wx + 2, -44.6, 8, 1.2);
       });
-      // Tür
-      g.beginPath(); g.moveTo(-11, 0); g.lineTo(-11, -28); g.quadraticCurveTo(0, -40, 11, -28); g.lineTo(11, 0); g.closePath(); sfill(g, '#8a4f2a', 1.5);
-      g.fillStyle = '#ffcc22'; circ(g, 6, -14, 1.8);
-      // Rauch
-      g.fillStyle = 'rgba(255,255,255,.75)';
-      for (var k = 0; k < 3; k++) { var p = ((fr / 8) + k / 3) % 1; circ(g, 32 + Math.sin(p * 5) * 5, -118 - p * 22, 3 + p * 4); }
+      // große Doppeltore mit weißem X
+      g.beginPath(); rrect(g, -21, -42, 42, 42, 2); sfill(g, TRIM, 1.6);
+      [-18, 1].forEach(function (dx) {
+        g.beginPath(); g.rect(dx, -39, 17, 39); sfill(g, DRK, 1.1);
+        for (var bx = dx + 4; bx < dx + 17; bx += 4) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(bx, -39, 1, 39); }
+        line(g, [dx + 1.5, -37.5, dx + 15.5, -1.5], TRIM, 2.4); line(g, [dx + 15.5, -37.5, dx + 1.5, -1.5], TRIM, 2.4);
+        g.strokeStyle = TRIM; g.lineWidth = 2.2; g.strokeRect(dx + 1, -38, 15, 37);
+      });
+      g.fillStyle = '#3a2a22'; circ(g, -2.5, -20, 1.4); circ(g, 2.5, -20, 1.4);
+      // Wetterhahn auf dem First, dreht sich leicht im Wind
+      line(g, [0, -114, 0, -136], '#4a4a4a', 1.8);
+      var sw = Math.sin(fr / 8 * Math.PI * 2) * 0.12;
+      g.save(); g.translate(0, -130); g.scale(Math.cos(sw), 1);
+      line(g, [-12, 0, 12, 0], '#4a4a4a', 1.4); g.fillStyle = '#4a4a4a'; poly(g, [12, 0, 7, -3, 7, 3]); poly(g, [-12, 0, -15, -3, -15, 3]);
+      g.fillStyle = '#d99a1e'; g.beginPath(); g.moveTo(-6, -2); g.quadraticCurveTo(-8, -9, -3, -9); g.lineTo(1, -6); g.lineTo(4, -12); g.quadraticCurveTo(8, -12, 7, -8); g.lineTo(9, -7); g.lineTo(6, -6); g.quadraticCurveTo(6, -2, 1, -2); g.closePath(); sfill(g, '#d99a1e', 1);
+      g.fillStyle = '#e8402e'; circ(g, 5.5, -12.5, 1.4);
+      g.restore();
+      line(g, [-4, -124, 4, -124], '#4a4a4a', 1.2);
+      // kleiner Schild über dem Tor mit einem Schaf-Kopf
+      g.beginPath(); rrect(g, -9, -55, 18, 9, 3); sfill(g, '#f6e2b8', 1.1);
+      g.fillStyle = '#ffffff'; circ(g, -1, -50.5, 3); circ(g, 2, -51, 2.6); g.fillStyle = '#3a2a22'; circ(g, 3.5, -50.5, 1.8);
     }, { ol: 1.8 });
   };
   // Wanderhändler mit Karren (steht neben dem Bauernhaus, solange er da ist)
@@ -1250,6 +1277,8 @@
     }, { ol: 1.5 });
   };
   A.drawMerchant = function (ctx, x, y, time) { A.blit(ctx, A.merchantSpr(Math.floor((time % 1.2) / 1.2 * 8)), x, y, 1, false, [36, 8]); };
+  var barnU = null;
+  A.barnURL = function () { if (!barnU) barnU = A.houseSpr(0, false).c.toDataURL(); return barnU; };
   A.drawHouse = function (ctx, x, y, time, night) { A.blit(ctx, A.houseSpr(time, night), x, y, 1, false, [64, 12]); };
   A.wolfSpr = function (time) {
     var fr = Math.floor((time % 0.6) / 0.6 * 6);

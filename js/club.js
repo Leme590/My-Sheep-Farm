@@ -119,15 +119,40 @@
   })();
 
   /* ---------- Zustand ---------- */
-  var C = { mine: undefined, list: null, search: '', err: '', mode: 'main', draft: null, busy: false, peek: null };
+  var C = { mine: undefined, list: null, search: '', err: '', mode: 'main', draft: null, busy: false, peek: null, inv: '', invites: [], seen: {} };
   function tok() { var m = U.me(); return m && m.token; }
   function err(e) { SFX('cant'); U.toast(N.errText(e)); }
   function rerender() { var sh = U.sheet(); if (sh && sh.name === 'club') U.renderSheet(); }
   function load() {
     if (!tok()) return;
     N.club.mine(tok()).then(function (m) { C.mine = m || null; G.S.club = m ? { id: m.id, name: m.name, crest: m.crest } : null; }).catch(function (e) { C.err = N.errText(e); }).then(rerender);
-    loadList();
+    loadList(); loadInvites(true);
   }
+  // Kai: Einladungen in einen Club. Neue Einladungen erscheinen als Fenster, alle stehen auch im Club-Menü.
+  function loadInvites(popup) {
+    if (!tok()) return Promise.resolve();
+    return N.club.invites(tok()).then(function (r) {
+      C.invites = r || [];
+      if (popup && !C.mine && !G.visiting && !U.modalOpen() && !$('#tut')) {
+        var x = C.invites.filter(function (y) { return !C.seen[y.id]; })[0];
+        if (x) { C.seen[x.id] = 1; inviteModal(x); }
+      }
+    }).catch(function () { /* später nochmal */ }).then(rerender);
+  }
+  function inviteModal(x) {
+    SFX('trumpet');
+    U.modal('<div class="modal cpeek">' + crest(x.crest, 90, 'big') + '<h2>Einladung!</h2><p>' + esc((x.from_name || '?') + ' lädt dich in den Club „' + x.name + '“ ein.') + '</p>' +
+      '<p class="num hint">👥 ' + x.members + ' / ' + MAX + ' · 💰 ' + fmt(x.income) + '/Sek.</p>' +
+      '<div class="btns"><button class="btn ghost" data-act="clInvNo:' + x.id + ':m">Ablehnen</button><button class="btn go" data-act="clInvYes:' + x.id + ':m">Beitreten</button></div></div>');
+  }
+  function inviteRows() {
+    if (!C.invites.length) return '';
+    return '<div class="card cinvs"><h3>📩 Einladungen</h3><div class="list clist">' + C.invites.map(function (x) {
+      return '<div class="li crow">' + crest(x.crest, 50) + '<div class="t"><b>' + esc(x.name) + '</b><small>von ' + esc(x.from_name || '?') + ' · <span class="num">👥 ' + x.members + ' / ' + MAX + '</span></small></div>' +
+        '<button class="btn ghost sm" data-act="clInvNo:' + x.id + '" aria-label="Ablehnen">✕</button><button class="btn go sm" data-act="clInvYes:' + x.id + '"' + (C.busy ? ' disabled' : '') + '>Beitreten</button></div>';
+    }).join('') + '</div></div>';
+  }
+  setInterval(function () { if (U.me() && !G.visiting && !document.hidden) loadInvites(true); }, 30000);
   function loadList() { N.club.list(tok(), C.search).then(function (r) { C.list = r; }).catch(function (e) { C.err = N.errText(e); }).then(rerender); }
 
   /* ---------- Menü ---------- */
@@ -170,10 +195,13 @@
       h += '<div class="cacts">' + (owner ? '<button class="btn purple" data-act="clEditCrest">🎨 Wappen ändern</button>' : '') +
         '<button class="btn racebtn" data-act="sheet:rennen">🏁 Schafrennen' + (SI.net.raceFriday() ? ' · HEUTE!' : '') + '</button></div>';
       h += '<div class="card"><h3>Mitglieder</h3>' + memberRows(m, me) + '</div>';
+      if (m.members.length < MAX) h += '<div class="card cinvite"><h3>📩 Freunde einladen</h3><p class="hint">Schreib den Namen von einem Spieler. Er bekommt eine Einladung in deinen Club.</p>' +
+        '<div class="durow"><input data-club="inv" placeholder="Spielername" autocomplete="off" maxlength="16" value="' + esc(C.inv) + '"><button class="btn go" data-act="clInvite"' + (C.busy ? ' disabled' : '') + '>Einladen</button></div></div>';
       h += '<p class="hint center">In der Bestenliste (🏆) gibt es eine Rangliste für Clubs. Da wird das Geld pro Sekunde von allen Mitgliedern zusammengezählt.</p>';
       h += '<button class="btn ghost wide cleave" data-act="clLeaveAsk">Club verlassen</button>';
       return { title: 'Clubs', html: h };
     }
+    h += inviteRows();
     h += '<div class="card cnew"><div class="cnewc">' + crest({ sh: 0, bg: 8, fg: 2, sy: 0 }, 70) + crest({ sh: 4, bg: 0, fg: 11, sy: 2 }, 56, 'b2') + crest({ sh: 1, bg: 6, fg: 2, sy: 4 }, 56, 'b3') + '</div><div><h3>Eigenen Club gründen</h3><p class="hint">Denk dir einen Namen aus und gestalte dein eigenes Wappen. Bis zu ' + MAX + ' Spieler können mitmachen.</p>' +
       '<button class="btn coin" data-act="clNew" data-cost="' + COST + '">Club gründen · <span class="num">' + fmt(COST) + '</span></button></div></div>';
     h += '<div class="card"><h3>Club beitreten</h3><div class="durow"><input data-club="search" placeholder="Club suchen" autocomplete="off" value="' + esc(C.search) + '"><button class="btn blue" data-act="clSearch">Suchen</button></div>';
@@ -195,8 +223,27 @@
     var k = e.target.dataset && e.target.dataset.club; if (!k) return;
     if (k === 'name' && C.draft) { C.draft.name = e.target.value; var pn = $('.cpn'); if (pn) pn.textContent = e.target.value || 'Dein Club'; }
     if (k === 'search') C.search = e.target.value;
+    if (k === 'inv') C.inv = e.target.value;
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.club === 'search') { C.list = null; rerender(); loadList(); } });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || !e.target.dataset) return;
+    if (e.target.dataset.club === 'search') { C.list = null; rerender(); loadList(); }
+    if (e.target.dataset.club === 'inv') invite();
+  });
+  function invite() {
+    var nm = String(C.inv || '').trim(); if (!nm || C.busy) return;
+    C.busy = true; rerender();
+    N.club.invite(tok(), nm).then(function () { SFX('pop'); U.toast('📩 ' + nm + ' wurde eingeladen!'); C.inv = ''; }).catch(err).then(function () { C.busy = false; rerender(); });
+  }
+  function answer(id, yes, fromModal) {
+    if (fromModal) U.nextModal();
+    C.busy = true; rerender();
+    N.club.answer(tok(), id, yes).then(function (m) {
+      C.invites = C.invites.filter(function (x) { return x.id !== id; });
+      if (yes && m) { C.mine = m; G.S.club = { id: m.id, name: m.name, crest: m.crest }; SFX('trumpet'); U.toast('Willkommen im Club „' + m.name + '“!'); U.saveLocal(); }
+      else SFX('close');
+    }).catch(function (e2) { err(e2); loadInvites(); }).then(function () { C.busy = false; rerender(); });
+  }
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
     var parts = el.dataset.act.split(':'), a = parts[0], arg = parts[1];
@@ -224,6 +271,9 @@
         break;
       case 'clSearch': C.list = null; rerender(); loadList(); break;
       case 'clJoin': join(arg); break;
+      case 'clInvite': invite(); break;
+      case 'clInvYes': answer(arg, true, parts[2] === 'm'); break;
+      case 'clInvNo': answer(arg, false, parts[2] === 'm'); break;
       case 'clPeek':
         N.club.info(tok(), arg).then(function (m) {
           var t = sum(m), full = m.members.length >= MAX;

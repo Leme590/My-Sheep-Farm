@@ -134,8 +134,13 @@
   G.dekoBonus = function () {
     var b = 0; G.S.dekoPlaced.forEach(function (p) { b += SI.DK[p.id].ev === 'cup' ? 0 : SI.DEKO_BONUS[SI.DK[p.id].r]; }); return b;
   };
+  // Kai: +10 % Einnahmen für jede Seltenheit, die im Sammelbuch komplett ist
+  G.SET_BONUS = 0.1;
+  G.rarDone = function (r) { var f = G.S.found || {}; return SI.TYPES.every(function (t) { return t.r !== r || f[t.id]; }); };
+  G.setsDone = function () { return SI.RORDER.filter(G.rarDone); };
+  G.setBonus = function () { return G.SET_BONUS * G.setsDone().length; };
   G.globalMult = function () {
-    return (1 + 0.05 * G.card('gold')) * (1 + G.dekoBonus()) * G.rbMult() * G.boostMult();
+    return (1 + 0.05 * G.card('gold')) * (1 + G.dekoBonus()) * (1 + G.setBonus()) * G.rbMult() * G.boostMult();
   };
   // Geld-Booster aus Aufgaben: doppeltes Geld für eine Weile
   G.boostLeft = function () { var b = G.S.boost; return b && b.end > Date.now() ? (b.end - Date.now()) / 1000 : 0; };
@@ -375,7 +380,7 @@
 
   /* ---------- Rebirth ---------- */
   // Preise der Rebirths (mit einer Spieler-Simulation abgestimmt: 1. Rebirth ca. 5 Min., danach immer länger)
-  var RB_COST = [4e5, 1e7, 2e8, 2e10, 1e14, 2e15]; // Kai: die letzten zwei sind günstiger
+  var RB_COST = [4e5, 1e7, 2e8, 2e10, 1e14, 5e14]; // Kai: die letzten zwei sind günstiger
   G.MAXRB = 6; // Kai: es gibt höchstens 6 Rebirths
   G.rebirthMax = function () { return G.S.rebirths >= G.MAXRB; };
   G.rebirthCost = function () { return RB_COST[Math.min(G.S.rebirths, RB_COST.length - 1)]; };

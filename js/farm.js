@@ -262,7 +262,7 @@
       F.cb.pen && F.cb.pen(i); return;
     }
     if (G.merch && inRect(w, { x: MERCH.x - 44, y: MERCH.y - 120, w: 88, h: 130 })) { F.cb.merchantTap && F.cb.merchantTap(); return; }
-    if (inRect(w, { x: HOUSE.x - HOUSE.w / 2, y: HOUSE.y - 90, w: HOUSE.w, h: 100 })) { F.cb.house && F.cb.house(); }
+    if (inRect(w, { x: HOUSE.x - HOUSE.w / 2, y: HOUSE.y - 135, w: HOUSE.w, h: 145 })) { F.cb.house && F.cb.house(); }
   }
 
   /* ---------- Schafe laufen lassen ---------- */
