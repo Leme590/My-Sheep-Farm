@@ -64,7 +64,8 @@
     var r = Math.round(((a >> 16) & 255) * (1 - k) + ((b >> 16) & 255) * k), gg = Math.round(((a >> 8) & 255) * (1 - k) + ((b >> 8) & 255) * k), bl = Math.round((a & 255) * (1 - k) + (b & 255) * k);
     return '#' + ((1 << 24) + (r << 16) + (gg << 8) + bl).toString(16).slice(1);
   }
-  A.mix = mix;
+  A.mix = mix; A.sfill = sfill; A.line = line; A.blob = blob;
+  A.extPat = {}; A.extHead = {}; A.extBack = {}; // Erweiterungen (z. B. Dschungel-Schafe in jungle.js)
 
   /* ---------- Schafe ---------- */
   var PUFFS = [[-14, -14, 8], [-9, -23, 8.5], [0, -27, 9], [9, -25, 8.5], [14, -17, 8], [9, -9, 8.5], [-2, -8, 8.5], [-13, -8, 7], [0, -17, 12.5]];
@@ -223,9 +224,11 @@
         g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1.6;
         [[-8, -24, 6], [8, -18, 5], [-12, -12, 4]].forEach(function (p) { g.beginPath(); g.arc(p[0], p[1], p[2], 0.2, 4.4); g.stroke(); });
         break;
+      default: if (A.extPat[pat]) A.extPat[pat](g, t, R);
     }
   }
   function drawBack(g, t, k, front) {
+    if (A.extBack[k]) { A.extBack[k](g, t, front); return; }
     switch (k) {
       case 'wings':
         if (front) return;
@@ -295,6 +298,7 @@
   }
   function drawHead(g, t, k) {
     var c;
+    if (A.extHead[k]) { A.extHead[k](g, t); return; }
     switch (k) {
       case 'sailorcap':
         line(g, [13, -31, 9.5, -26.5], '#2a4fa8', 1.8); line(g, [14, -31, 11.5, -25.5], '#2a4fa8', 1.8);
@@ -594,6 +598,7 @@
     anchor: [-14, -32, 14, 3], rope: [-15, -16, 18, 3], barrelp: [-11, -25, 11, 2], palm: [-20, -66, 30, 3], skullflag: [-4, -46, 24, 2], cannonball: [-11, -16, 11, 2],
     shipwheel: [-18, -38, 18, 2], cannon: [-14, -24, 30, 4], chest: [-14, -32, 14, 2], ghostlantern: [-4, -40, 12, 2] };
   var PROP_ANIM = { fire: 0.7, steam: 2 };
+  A.PROP_BOX = PROP_BOX; A.PROP_ANIM = PROP_ANIM;
   /* ---------- Gehege-Ausbau: Dinge, die mit jeder Stufe dazukommen ---------- */
   var PEN_ITEM = {
     trough: [[-25, -25, 25, 5], function (g) {
@@ -661,6 +666,7 @@
     kugeln: [-18, -28, 18, 4], seilrolle: [-18, -22, 20, 5], anker: [-24, -58, 24, 6], palme: [-34, -94, 40, 6], kanone: [-30, -36, 46, 6], schatztruhe: [-24, -48, 24, 4],
     piratenflagge: [-12, -92, 40, 4], piratenschiff: [-58, -110, 58, 6] };
   var DEKO_ANIM = { kanone: 3, schatztruhe: 2, piratenflagge: 1.5, piratenschiff: 3.14, cupFlagge: 1.5, cupAmpel: 3, cupKanone: 2, cupPokal: 2.5, muehle: 1.96, teich: 15.7, feuer: 0.7, vogel: 3.14, ufo: 3.14, leucht: 5.24, regenbrunnen: 1.25, kristallbaum: 2.1, drache: 3.14, papelgirlande: 3.14, gitarre: 2, pinatadeko: 2.5, tacotruck: 2 };
+  A.DEKO_BOX = DEKO_BOX; A.DEKO_ANIM = DEKO_ANIM;
   A.dekoSpr = function (id, time, night) {
     var per = DEKO_ANIM[id], n = id === 'teich' ? 24 : 12, fr = per ? Math.floor(((time % per) / per) * n) : 0;
     var lit = night && SI.DK[id].light ? 1 : 0;
@@ -1201,7 +1207,10 @@
       }
     }, { ol: 1.6 });
   };
-  A.drawTree = function (ctx, k, x, y) { A.blit(ctx, A.treeSpr(k), x, y, 1.25, false, [18, 5]); };
+  A.drawTree = function (ctx, k, x, y) {
+    if (SI.env === 'dschungel' && A.jungleTreeSpr) { A.blit(ctx, A.jungleTreeSpr(k), x, y, 1.25, false, [20, 5]); return; }
+    A.blit(ctx, A.treeSpr(k), x, y, 1.25, false, [18, 5]);
+  };
   // Kai: Die Scheune sieht jetzt wie eine richtige rote Scheune aus (Mansarddach, große Tore mit weißem X, Heuboden, Wetterhahn)
   A.houseSpr = function (time, night) {
     var fr = Math.floor((time % 4) / 4 * 8);
@@ -1429,6 +1438,14 @@
           g.save(); g.translate(0, -40); g.rotate(-0.35); g.beginPath(); g.ellipse(0, 0, 15, 4, 0, 0, TAU); g.strokeStyle = OUT; g.lineWidth = 3.6; g.stroke(); g.strokeStyle = '#ffe24a'; g.lineWidth = 1.8; g.stroke(); g.restore();
         } });
       glint(g, 28, -64, 5); glint(g, -30, -58, 3.5); glint(g, -27, -6, 3);
+    },
+    dschungel: function (g) { // Dschungelkiste: Holzkiste mit Lianen, Blättern und Smaragd
+      chest(g, { body: vgrad(g, -40, 0, '#3fae55', '#1d6a2c'), lid: vgrad(g, -68, -38, '#8a5a2b', '#5a3615'), band: '#c58a12', rim: '#1a3a12', planks: 1,
+        bodyArt: function (g) { g.strokeStyle = '#a8e05a'; g.lineWidth = 2.2; g.beginPath(); g.moveTo(-32, -30); g.bezierCurveTo(-14, -16, 6, -36, 32, -18); g.stroke();
+          g.fillStyle = '#7fd24a'; [[-20, -22, -0.6], [2, -28, 0.4], [20, -22, -0.3]].forEach(function (p) { g.save(); g.translate(p[0], p[1]); g.rotate(p[2]); g.beginPath(); g.ellipse(0, 0, 6, 3, 0, 0, TAU); fillOut(g, '#7fd24a', 1); g.restore(); }); },
+        lidArt: function (g) { g.fillStyle = '#2f9a4a'; [[-26, -56, -0.8], [-10, -64, -0.3], [12, -63, 0.4], [27, -55, 0.9]].forEach(function (p) { g.save(); g.translate(p[0], p[1]); g.rotate(p[2]); g.beginPath(); g.ellipse(0, -4, 5, 10, 0, 0, TAU); fillOut(g, '#3fc061', 1.2); g.restore(); }); },
+        lock: function (g) { g.beginPath(); rrect(g, -10, -51, 20, 23, 5); fillOut(g, '#e8c25a', 1.5); gem(g, 0, -40, 7.5, '#14b84a'); } });
+      glint(g, 28, -62, 4.5); glint(g, -29, -10, 3);
     },
     turnier: function (g) { // Turnier-Kiste: nur vom Schafrennen-Cup
       chest(g, { body: vgrad(g, -40, 0, '#ff5a4a', '#b81f2a'), lid: vgrad(g, -68, -38, '#ffe066', '#e0960f'), band: '#ffd23f', rim: '#5a1414', glow: '#ffd23f',

@@ -107,6 +107,8 @@
         if (escd) G.getStake(escd);
         G.getStake(v.opp_stake); info.win = 'me'; info.gain = v.opp_stake;
         S.stats.duelWins = (S.stats.duelWins || 0) + 1;
+        var art = G.rollArt('krone', 30); // Kai: 1 zu 30 bei jedem gewonnenen Duell
+        if (art) setTimeout(function () { if (SI.jg) SI.jg.found(art); }, 2600);
       } else {
         info.lost = escd || G.payStake(v.my_stake || {});
         info.win = 'opp'; info.rescued = G.rescue();

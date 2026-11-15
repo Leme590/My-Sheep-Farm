@@ -181,6 +181,14 @@
     // Deko-Menü: Windspiel
     chime: function () { [0, 1, 2, 3].forEach(function (i) { clink(i * 0.11 + Math.random() * 0.05, [1320, 1570, 1760, 2090][i], 0.05, 1.4); }); },
     // Zucht-Menü: Herzklopfen
+    // Dschungel-Event: Artefakt gefunden (Gong und geheimnisvolle Harfe), Schlange zischt, Tempeltür
+    artifact: function () {
+      tone(98, 2.2, { type: 'sine', vol: 0.3, a: 0.004 }); tone(196, 1.6, { type: 'sine', vol: 0.12, a: 0.004 }); tone(293, 1.2, { type: 'triangle', vol: 0.05 });
+      [62, 65, 69, 72, 77, 81, 84].forEach(function (n, i) { tone(N(n), 1.1, { type: 'triangle', vol: 0.06, at: 0.4 + i * 0.09, a: 0.003 }); });
+      sparkle(0.9, 16);
+    },
+    snake: function () { noise(0.9, { ft: 'highpass', f: 4000, vol: 0.18 }); tone(220, 0.3, { type: 'sawtooth', vol: 0.04, to: 120, at: 0.1 }); },
+    jdoor: function () { noise(0.5, { ft: 'lowpass', f: 400, fto: 150, vol: 0.25 }); knock(0.45, 90, 0.3); },
     // Zucht öffnen (Kai): Harfe nach oben, dann rufen sich zwei Schafe zu
     love: function () {
       [67, 71, 74, 79, 83, 86].forEach(function (n, i) { tone(N(n), 0.9, { type: 'triangle', vol: 0.07, at: i * 0.05, a: 0.003 }); });
@@ -225,11 +233,22 @@
   function cricket() {
     for (var i = 0; i < 6; i++) tone(4300, 0.025, { at: i * 0.045, type: 'square', vol: 0.012, bus: ambBus });
   }
+  // Dschungel (Kai): Tukan-Rufe am Tag, Frösche in der Nacht
+  function toucanCall() {
+    var b = 700 + Math.random() * 300;
+    for (var i = 0; i < 3; i++) tone(b, 0.12, { at: i * 0.16, type: 'triangle', vol: 0.05, to: b * 0.7, bus: ambBus });
+    tone(1800 + Math.random() * 400, 0.25, { at: 0.55, type: 'sine', vol: 0.03, to: 2600, bus: ambBus });
+  }
+  function frog() {
+    var f = 140 + Math.random() * 60;
+    for (var i = 0; i < 2; i++) tone(f, 0.16, { at: i * 0.22, type: 'square', vol: 0.03, to: f * 0.8, bus: ambBus });
+  }
   function ambient(night, sheepN) {
     if (!ready() || !on) return;
-    var t = X.currentTime;
-    if (!night && t > nextBird) { bird(); nextBird = t + 4 + Math.random() * 9; }
-    if (night && t > nextCricket) { cricket(); if (Math.random() < 0.6) setTimeout(function () { if (ready()) cricket(); }, 320); nextCricket = t + 1.5 + Math.random() * 2.5; }
+    var t = X.currentTime, J = SI.env === 'dschungel';
+    if (!night && t > nextBird) { if (J && Math.random() < 0.6) toucanCall(); else bird(); nextBird = t + 4 + Math.random() * 9; }
+    if (night && J && t > nextCricket) { frog(); nextCricket = t + 1.2 + Math.random() * 2.2; }
+    else if (night && t > nextCricket) { cricket(); if (Math.random() < 0.6) setTimeout(function () { if (ready()) cricket(); }, 320); nextCricket = t + 1.5 + Math.random() * 2.5; }
     if (sheepN > 0 && t > nextBaa) {
       baa(night ? 280 + Math.random() * 60 : null, night ? 0.12 : 0.22, ambBus);
       nextBaa = t + Math.max(5, 26 - sheepN * 0.6) * (0.6 + Math.random() * 0.8) * (night ? 2 : 1);

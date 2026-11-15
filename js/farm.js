@@ -53,24 +53,34 @@
     lightCv.width = cv.width; lightCv.height = cv.height;
     clamp();
   }
+  // Kai: Umgebung Wiese oder Dschungel (gilt für alle Farmen, stellt der Admin ein)
+  var patEnv = '';
   function makePatterns() {
+    var J = SI.env === 'dschungel'; patEnv = SI.env || 'wiese';
     var c = document.createElement('canvas'); c.width = c.height = 160;
     var g = c.getContext('2d'), R = A.rng(7), i;
-    g.fillStyle = '#86d65a'; g.fillRect(0, 0, 160, 160);
-    g.fillStyle = '#7ccc50'; for (i = 0; i < 160; i += 40) g.fillRect(i, 0, 20, 160);
+    g.fillStyle = J ? '#5cae44' : '#86d65a'; g.fillRect(0, 0, 160, 160);
+    g.fillStyle = J ? '#54a33c' : '#7ccc50'; for (i = 0; i < 160; i += 40) g.fillRect(i, 0, 20, 160);
     for (i = 0; i < 70; i++) {
       var x = R() * 160, y = R() * 160;
-      g.strokeStyle = R() < 0.5 ? '#9be36c' : '#63b23f'; g.lineWidth = 1.6; g.lineCap = 'round';
+      g.strokeStyle = R() < 0.5 ? (J ? '#7ccc58' : '#9be36c') : (J ? '#3f8a30' : '#63b23f'); g.lineWidth = 1.6; g.lineCap = 'round';
       g.beginPath(); g.moveTo(x - 2, y + 2); g.lineTo(x - 1, y - 2); g.moveTo(x, y + 2); g.lineTo(x + 1, y - 3); g.moveTo(x + 2, y + 2); g.lineTo(x + 3.5, y - 1.5); g.stroke();
     }
-    for (i = 0; i < 10; i++) { var fx = R() * 160, fy = R() * 160; g.fillStyle = ['#ffffff', '#ffe066', '#ff8fb8'][i % 3]; for (var k = 0; k < 5; k++) A.circ(g, fx + Math.cos(k * 1.26) * 1.6, fy + Math.sin(k * 1.26) * 1.6, 1.1); g.fillStyle = '#ffb000'; A.circ(g, fx, fy, 0.9); }
+    if (J) { // große Blätter am Boden
+      for (i = 0; i < 9; i++) { var lx = R() * 160, ly = R() * 160, la = R() * 6.28; g.save(); g.translate(lx, ly); g.rotate(la); g.fillStyle = R() < 0.5 ? '#3f9a3a' : '#4aaa44'; A.ell(g, 0, 0, 7, 3); g.strokeStyle = '#2f7a2a'; g.lineWidth = 0.8; g.beginPath(); g.moveTo(-6, 0); g.lineTo(6, 0); g.stroke(); g.restore(); }
+    }
+    for (i = 0; i < 10; i++) { var fx = R() * 160, fy = R() * 160; g.fillStyle = (J ? ['#ff4f6a', '#ffb02e', '#e86bff'] : ['#ffffff', '#ffe066', '#ff8fb8'])[i % 3]; for (var k = 0; k < 5; k++) A.circ(g, fx + Math.cos(k * 1.26) * 1.6, fy + Math.sin(k * 1.26) * 1.6, 1.1); g.fillStyle = '#ffb000'; A.circ(g, fx, fy, 0.9); }
     grassPat = ctx.createPattern(c, 'repeat');
     var o = document.createElement('canvas'); o.width = o.height = 128;
     g = o.getContext('2d'); R = A.rng(11);
-    g.fillStyle = '#4fa63e'; g.fillRect(0, 0, 128, 128);
-    for (i = 0; i < 110; i++) { g.fillStyle = R() < 0.5 ? '#5bb348' : '#469935'; A.ell(g, R() * 128, R() * 128, 1 + R() * 3, 1 + R() * 2); }
+    g.fillStyle = J ? '#2f7f34' : '#4fa63e'; g.fillRect(0, 0, 128, 128);
+    for (i = 0; i < 110; i++) { g.fillStyle = R() < 0.5 ? (J ? '#3a8f3c' : '#5bb348') : (J ? '#246a2a' : '#469935'); A.ell(g, R() * 128, R() * 128, 1 + R() * 3, 1 + R() * 2); }
     outerPat = ctx.createPattern(o, 'repeat');
   }
+  F.envChanged = function () { if (ctx && patEnv !== (SI.env || 'wiese')) makePatterns(); };
+  // Dschungel-Tempel mit den Verlorenen Artefakten (während des Events oder wenn man den Wächter hat)
+  var TEMPLE = { x: 560, y: 196 };
+  function templeOn() { return SI.jungleOn() || !!G.S.waechter; }
   function buildTrees() {
     var s = F.size(), key = s.w + 'x' + s.h;
     if (key === treeKey) return;
@@ -175,6 +185,7 @@
     if (x < r + 10 || y < r + 30 || x > s.w - r - 10 || y > s.h - 10) return false;
     for (var i = 0; i < G.plotCount(); i++) if (inRect({ x: x, y: y }, F.plotRect(i), r * 0.6 + 6)) return false;
     if (inRect({ x: x, y: y }, { x: HOUSE.x - HOUSE.w / 2 - 10, y: HOUSE.y - HOUSE.h, w: HOUSE.w + 20, h: HOUSE.h + 20 }, r * 0.6)) return false;
+    if (templeOn() && inRect({ x: x, y: y }, { x: TEMPLE.x - 60, y: TEMPLE.y - 40, w: 120, h: 50 }, r * 0.6)) return false;
     for (var j = 0; j < G.S.dekoPlaced.length; j++) {
       if (j === ignore) continue;
       var p = G.S.dekoPlaced[j], o = SI.DK[p.id];
@@ -263,6 +274,7 @@
     }
     if (G.merch && inRect(w, { x: MERCH.x - 44, y: MERCH.y - 120, w: 88, h: 130 })) { F.cb.merchantTap && F.cb.merchantTap(); return; }
     if (inRect(w, { x: HOUSE.x - HOUSE.w / 2, y: HOUSE.y - 135, w: HOUSE.w, h: 145 })) { F.cb.house && F.cb.house(); }
+    else if (templeOn() && inRect(w, { x: TEMPLE.x - 60, y: TEMPLE.y - 130, w: 120, h: 140 })) { F.cb.temple && F.cb.temple(); }
   }
 
   /* ---------- Schafe laufen lassen ---------- */
@@ -391,6 +403,7 @@
   }
 
   function frame(nowMs) {
+    if (patEnv !== (SI.env || 'wiese')) makePatterns();
     var dt = Math.min(0.1, (nowMs - last) / 1000); last = nowMs; time += dt;
     if (cv.clientWidth && (cv.clientWidth !== W || cv.clientHeight !== H)) resize(); // Bild nie verzerren
     var cyc = G.cycle();
@@ -475,6 +488,7 @@
       ctx.lineWidth = 4; ctx.strokeText('!', 0, 1.5); ctx.fillStyle = '#fff'; ctx.fillText('!', 0, 1.5);
       ctx.restore();
     } });
+    if (templeOn() && A.drawTemple) list.push({ y: TEMPLE.y, f: function () { A.drawTemple(ctx, TEMPLE.x, TEMPLE.y * K, time, cyc.dark > 0.4, G.S.arts || {}, !!G.S.waechter); } });
     // Briefkasten mit Schild
     list.push({ y: HOUSE.y + 10, f: function () {
       ctx.save(); ctx.translate(HOUSE.x + 110, (HOUSE.y + 10) * K);
@@ -651,6 +665,18 @@
       var fade = Math.min(1, e.t / 3, (e.life - e.t) / 3);
       if (e.k === 'rainbow') {
         // wird hinter den Bäumen gezeichnet (siehe drawRainbow)
+      } else if (e.k === 'birds' && SI.env === 'dschungel' && A.drawToucan) {
+        e.x += e.dir * 90 * dt;
+        e.b.forEach(function (b) {
+          var x = e.x + b.dx, gy = (e.y + b.dy) * K;
+          ctx.globalAlpha = 0.2; ctx.fillStyle = '#1a3010'; ctx.beginPath(); ctx.ellipse(x, gy, 9, 3.5, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha = 1;
+          A.drawToucan(ctx, x, gy - e.h, e.dir, e.t * 9 + b.ph);
+        });
+      } else if (e.k === 'fly' && SI.env === 'dschungel' && A.drawHummingbird) {
+        e.ph += dt; e.x += (Math.cos(e.ph * 0.7) * 40 + 10) * dt; e.y += Math.sin(e.ph * 1.3) * 24 * dt;
+        var hx = e.x, hy = e.y * K - 34 - Math.sin(e.ph * 2) * 8;
+        ctx.globalAlpha = 0.15 * fade; ctx.fillStyle = '#1a3010'; ctx.beginPath(); ctx.ellipse(hx, e.y * K, 4, 1.6, 0, 0, 6.283); ctx.fill();
+        ctx.globalAlpha = fade; A.drawHummingbird(ctx, hx, hy, Math.cos(e.ph * 0.7) >= -0.25 ? 1 : -1, e.ph, e.c); ctx.globalAlpha = 1;
       } else if (e.k === 'birds') {
         e.x += e.dir * 90 * dt;
         e.b.forEach(function (b) {

@@ -9,9 +9,11 @@ window.SI = window.SI || {};
     e: { n: 'Episch', col: '#9445d8' },
     l: { n: 'Legendär', col: '#e58a00' },
     m: { n: 'Mythisch', col: '#e0367f' },
-    s: { n: 'Geheim', col: '#0f9f8f' }
+    x: { n: 'Exotisch', col: '#14b84a' }, // Dschungel-Update (Kai, 15.11.2026): über Mythisch
+    s: { n: 'Geheim', col: '#0f9f8f' },
+    u: { n: 'Uralt', col: '#c58a12' } // nur der Dschungelwächter
   };
-  SI.RORDER = ['c', 'r', 'e', 'l', 'm', 's'];
+  SI.RORDER = ['c', 'r', 'e', 'l', 'm', 'x', 's', 'u'];
 
   // pen: g = Boden, s = Muster-Farbe, sk = Muster-Art, props = Dinge im Gehege
   SI.TYPES = [
@@ -76,6 +78,40 @@ window.SI = window.SI || {};
       pen: { name: 'Geisterschiff', g: '#1f3a3a', s: '#3fe0b0', sk: 'dot', props: ['ghostlantern', 'skullflag', 'chest'], glow: '#5fffc8' } },
     { id: 'schatz', n: 'Schatzschaf', r: 's', inc: 32000, w: ['#fff1a8', '#f5c542', '#c98a12'], f: '#5a3a00',
       pen: { name: 'Schatzinsel', g: '#f0d9a0', s: '#ffe9a0', sk: 'dot', props: ['chest', 'palm', 'coin'], glow: '#ffd23f' } },
+    // Dschungel (Kai, 15.11.2026): ganz normale Schafe in den Kisten, jg = Dschungel-Schaf (für die Dschungelkiste)
+    { id: 'bananen', n: 'Bananenschaf', r: 'c', inc: 3, jg: 1, w: ['#fff6b0', '#ffe14a'], f: '#4a3a10',
+      pen: { name: 'Bananenhain', g: '#5fae3e', s: '#79c24f', sk: 'dot', props: ['bananatree', 'fern', 'bananatree'] } },
+    { id: 'lianen', n: 'Lianenschaf', r: 'c', inc: 6, jg: 1, w: ['#d8f0a0', '#9ccf5a'], f: '#2f4a1a',
+      pen: { name: 'Lianenwald', g: '#4f9a3a', s: '#62b04a', sk: 'stripe', props: ['fern', 'jtree', 'fern'] } },
+    { id: 'frosch', n: 'Froschschaf', r: 'r', inc: 70, jg: 1, w: ['#a8f070', '#3fbf4a'], f: '#1f4a1a',
+      pen: { name: 'Seerosenteich', g: '#3f9a6a', s: '#5fc0a0', sk: 'dot', props: ['lily', 'fern', 'lily'] } },
+    { id: 'orchidee', n: 'Orchideenschaf', r: 'r', inc: 120, jg: 1, w: ['#fbe0ff', '#e5a6f5'], f: '#5a2a5a',
+      pen: { name: 'Orchideengarten', g: '#4fa04a', s: '#f5b8f0', sk: 'dot', props: ['orchid', 'fern', 'orchid'] } },
+    { id: 'faultier', n: 'Faultierschaf', r: 'e', inc: 2200, jg: 1, w: ['#d8bb8a', '#9a7a52'], f: '#3a2a18',
+      pen: { name: 'Faultierbaum', g: '#4a8a3a', s: '#5f9f48', sk: 'dot', props: ['jtree', 'fern', 'jtree'] } },
+    { id: 'tukan', n: 'Tukanschaf', r: 'e', inc: 4500, jg: 1, w: ['#3a3a44', '#16161c'], f: '#0c0c10',
+      pen: { name: 'Tukannest', g: '#3f8f3a', s: '#ffb02e', sk: 'dot', props: ['fern', 'bananatree', 'orchid'] } },
+    { id: 'jaguar', n: 'Jaguarschaf', r: 'l', inc: 60000, jg: 1, w: ['#ffe08a', '#f0a830'], f: '#3a2408',
+      pen: { name: 'Jaguarfelsen', g: '#5a8a3a', s: '#6f9f4a', sk: 'dot', props: ['rock:#8a8070', 'fern', 'ruin'] } },
+    { id: 'gorilla', n: 'Gorillaschaf', r: 'l', inc: 90000, jg: 1, w: ['#6a6a78', '#2e2e38'], f: '#141418',
+      pen: { name: 'Bambuslichtung', g: '#5a9a3a', s: '#7ab84a', sk: 'stripe', props: ['bamboo', 'bananatree', 'bamboo'] } },
+    { id: 'chamaeleon', n: 'Chamäleonschaf', r: 'm', inc: 30000000, jg: 1, w: ['#8af06a', '#3fd0c0', '#ffd23f', '#ff7a4a'], f: '#1f3a2a',
+      pen: { name: 'Regenwalddach', g: '#2f7a3a', s: '#4fa04a', sk: 'dot', props: ['jtree', 'orchid', 'fern'], glow: '#7af06a' } },
+    { id: 'panther', n: 'Pantherschaf', r: 'm', inc: 42000000, jg: 1, w: ['#4a4560', '#16131f'], f: '#08070c',
+      pen: { name: 'Schattendschungel', g: '#1f3a2a', s: '#2f5a3a', sk: 'dot', props: ['fern', 'ruin', 'fern'], glow: '#9a7aff' } },
+    { id: 'tempel', n: 'Tempelschaf', r: 'x', inc: 400000000, jg: 1, w: ['#f2e2b0', '#c8a65a', '#8a6a2a'], f: '#3a2a0a',
+      pen: { name: 'Verlorener Tempel', g: '#7a8a5a', s: '#a8a070', sk: 'dot', props: ['ruin', 'fern', 'ruin'], glow: '#ffd23f' } },
+    { id: 'smaragd', n: 'Smaragdschaf', r: 'x', inc: 700000000, jg: 1, w: ['#c8ffe0', '#3fe09a', '#0f8a5a'], f: '#06301e',
+      pen: { name: 'Smaragdgrotte', g: '#1f5a3a', s: '#3fe09a', sk: 'dot', props: ['crystal:#3fe09a', 'fern', 'crystal:#9fffd0'], glow: '#3fe09a' } },
+    { id: 'quetzal', n: 'Quetzalschaf', r: 'x', inc: 1000000000, jg: 1, w: ['#5ff0b0', '#1fa0d0', '#e8322e'], f: '#0a2a2a',
+      pen: { name: 'Quetzal-Wasserfall', g: '#2f8a5a', s: '#5fd0ff', sk: 'dot', props: ['fern', 'orchid', 'jtree'], glow: '#5ff0b0' } },
+    { id: 'urwald', n: 'Urwaldschaf', r: 's', inc: 250000, jg: 1, w: ['#8ac05a', '#4a7a2a'], f: '#1a2a0a',
+      pen: { name: 'Uralter Urwald', g: '#2f6a2a', s: '#4a8a3a', sk: 'dot', props: ['jtree', 'mushroom', 'jtree'] } },
+    { id: 'tarn', n: 'Tarnschaf', r: 's', inc: 120000000, jg: 1, w: ['#4a6a3a', '#7a9a4a', '#3a4a2a', '#8aaa5a', '#5a7a3a'], hard: 1, f: '#0f1a0a',
+      pen: { name: 'Tarnversteck', g: '#3a5a2a', s: '#5a7a3a', sk: 'dot', props: ['fern', 'bamboo', 'fern'], glow: '#9aff6a' } },
+    // Der Dschungelwächter: nur für alle 4 Verlorenen Artefakte. Bleibt für immer, auch nach einem Rebirth.
+    { id: 'waechter', n: 'Dschungelwächter', r: 'u', inc: 0, special: 1, w: ['#fff6c0', '#ffd23f', '#2fd08a'], f: '#2a1a00',
+      pen: { name: 'Goldener Tempel', g: '#c8a65a', s: '#ffe9a0', sk: 'dot', props: ['ruin', 'coin', 'ruin'], glow: '#ffd23f' } },
     // Taco Tuesday (Kai): gibt es nur dienstags aus der Nacho-Box. ev = Event, kommt nicht in normalen Boxen vor
     { id: 'guac', n: 'Guacamoleschaf', r: 'e', inc: 2000, ev: 'taco', w: ['#d9f08a', '#8cc63f', '#4f8a2a'], f: '#1f3a12',
       pen: { name: 'Avocado-Hain', g: '#d8b47a', s: '#e8cc95', sk: 'dot', props: ['avocado', 'cactus', 'avocado'] } },
@@ -88,7 +124,7 @@ window.SI = window.SI || {};
   ];
   SI.T = {};
   SI.TYPES.forEach(function (t) { SI.T[t.id] = t; });
-  SI.RECIPES = { 'eis+feuer': 'dampf', 'moos+nacht': 'zebra', 'blitz+kristall': 'gewitter', 'gold+kristall': 'diamant', 'drache+feuer': 'lava', 'galaxie+regen': 'sonne', 'chili+guac': 'taco', 'gold+pirat': 'schatz' };
+  SI.RECIPES = { 'eis+feuer': 'dampf', 'moos+nacht': 'zebra', 'blitz+kristall': 'gewitter', 'gold+kristall': 'diamant', 'drache+feuer': 'lava', 'galaxie+regen': 'sonne', 'chili+guac': 'taco', 'gold+pirat': 'schatz', 'faultier+gorilla': 'urwald', 'chamaeleon+panther': 'tarn' };
 
   // rb = ab welchem Rebirth die Kiste freigeschaltet ist
   SI.BOX = [
@@ -98,7 +134,7 @@ window.SI = window.SI || {};
     { k: 'gold', n: 'Goldkiste', cost: 7.2e6, odds: { r: 30, e: 60, l: 9.5, m: 0.5 }, card: 14, col: '#f2b632', rb: 1 },
     { k: 'kristall', n: 'Kristallkiste', cost: 1.5e8, odds: { e: 55, l: 42, m: 3 }, card: 15, col: '#a98bff', rb: 2 },
     { k: 'regen', n: 'Regenbogenkiste', cost: 5e9, odds: { e: 20, l: 68, m: 12 }, card: 15, col: 'rainbow', rb: 3 },
-    { k: 'galaxie', n: 'Galaxiekiste', cost: 3e11, odds: { l: 55, m: 45 }, card: 4, col: '#2a1f6b', rb: 4 }
+    { k: 'galaxie', n: 'Galaxiekiste', cost: 3e11, odds: { l: 55, m: 44.8, x: 0.2 }, card: 4, col: '#2a1f6b', rb: 4 }
   ];
 
   SI.BK = {};
@@ -106,6 +142,12 @@ window.SI = window.SI || {};
   // Nacho-Box: nur am Taco Tuesday, nur mexikanische Schafe (steht nicht in SI.BOX, damit der Händler sie nicht anbietet)
   SI.NACHO = { k: 'nacho', n: 'Nacho-Box', cost: 75e6, odds: { e: 60, l: 35, m: 5 }, card: 8, col: '#ffb52e', ev: 'taco' };
   SI.BK.nacho = SI.NACHO;
+  // Dschungel-Event (Kai): endet Dienstag 24.11.2026 um 0 Uhr Greenwich-Zeit. Danach sind Artefakte und Minispiel weg.
+  SI.JUNGLE_END = Date.UTC(2026, 10, 24, 0, 0, 0);
+  SI.jungleOn = function () { return Date.now() < SI.JUNGLE_END; };
+  // Dschungelkiste: nur während des Events, nur Dschungel-Schafe (Kai: 5 T, 5 % Exotisch)
+  SI.JBOX = { k: 'dschungel', n: 'Dschungelkiste', cost: 5e12, odds: { l: 50, m: 45, x: 5 }, card: 0, col: '#2f9a4a', jg: 1 };
+  SI.BK.dschungel = SI.JBOX;
   // Turnier-Kiste: gibt es nur als Belohnung beim Schafrennen-Cup (Kai).
   // 3 zufällige Belohnungen. Schafe wie die drittbeste Kiste, Deko wie die zweitbeste Deko-Kiste (legendär).
   SI.BK.turnier = { k: 'turnier', n: 'Turnier-Kiste', cost: 0, odds: SI.BK.kristall.odds, card: 0, col: '#ffc21a' };
@@ -157,6 +199,14 @@ window.SI = window.SI || {};
     { id: 'schatztruhe', n: 'Schatztruhe', r: 'e', rad: 20, light: 60 },
     { id: 'piratenflagge', n: 'Piratenflagge', r: 'l', rad: 14 },
     { id: 'piratenschiff', n: 'Piratenschiff', r: 'm', rad: 46, light: 150 },
+    // Dschungel (Kai, 15.11.2026)
+    { id: 'riesenblatt', n: 'Riesenblätter', r: 'c', rad: 16 },
+    { id: 'bambus', n: 'Bambusstangen', r: 'c', rad: 14 },
+    { id: 'bananenstaude', n: 'Bananenstaude', r: 'r', rad: 18 },
+    { id: 'totem', n: 'Dschungel-Totem', r: 'e', rad: 16 },
+    { id: 'haengebruecke', n: 'Hängebrücke', r: 'e', rad: 34 },
+    { id: 'tempelruine', n: 'Tempelruine', r: 'l', rad: 30, light: 90 },
+    { id: 'wasserfall', n: 'Dschungel-Wasserfall', r: 'm', rad: 36, light: 110 },
     // Taco Tuesday: mexikanische Deko, nur aus der Taco-Kiste
     // Schafrennen-Cup: jede Woche eine exklusive Deko für den Sieger-Club (ohne Bonus, Kai)
     { id: 'cupPokal', n: 'Goldener Cup-Pokal', r: 'm', rad: 16, ev: 'cup' },

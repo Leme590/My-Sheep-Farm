@@ -670,6 +670,29 @@
     board: function () { return ONLINE ? rpc('sp_club_board', {}).then(function (r) { return r || []; }) : LCL.board(); }
   };
 
+  /* ---------- Dschungel-Event: Umgebung für alle und Artefakt-Nachrichten ---------- */
+  var LJ = {
+    env: function () { return lsGet('schaf_env', 'wiese'); },
+    setEnv: function (tok, env) {
+      try { LOCAL.isAdmin(tok); } catch (e) { return Promise.reject(e); }
+      lsSet('schaf_env', env === 'dschungel' ? 'dschungel' : 'wiese'); return Promise.resolve(env);
+    },
+    add: function (tok, kind) {
+      var f = LOCAL.find(tok); if (!f) return Promise.reject(new Error('bad_token'));
+      var list = lsGet('schaf_news', []), u = f.a[f.k].username;
+      if (list.some(function (n) { return n.username === u && n.kind === kind; })) return Promise.resolve(false);
+      list.push({ id: list.length + 1, username: u, kind: kind, created_at: new Date().toISOString() }); lsSet('schaf_news', list);
+      return Promise.resolve(true);
+    },
+    news: function (after) { return Promise.resolve(lsGet('schaf_news', []).filter(function (n) { return n.id > (after || 0); }).reverse().slice(0, 10)); }
+  };
+  N.jungle = {
+    env: function () { return ONLINE ? rpc('sp_env', {}).then(function (r) { return r === 'dschungel' ? 'dschungel' : 'wiese'; }) : Promise.resolve(LJ.env()); },
+    setEnv: function (tok, env) { return ONLINE ? rpc('sp_admin_env', { p_token: tok, p_env: env }) : LJ.setEnv(tok, env); },
+    add: function (tok, kind) { return ONLINE ? rpc('sp_news_add', { p_token: tok, p_kind: kind }) : LJ.add(tok, kind); },
+    news: function (after) { return ONLINE ? rpc('sp_news', { p_after: after || 0 }).then(function (r) { return r || []; }) : LJ.news(after); }
+  };
+
   N.session = function () { return lsGet('schaf_session', null); };
   N.setSession = function (s) { if (s) lsSet('schaf_session', s); else { try { localStorage.removeItem('schaf_session'); } catch (e) { /* egal */ } } };
 })(window.SI);

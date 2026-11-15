@@ -170,7 +170,7 @@
         : '<button class="btn go" data-act="clSaveCrest"' + (C.busy ? ' disabled' : '') + '>Speichern</button>') + '</div></div>';
     return h;
   }
-  function avatar(name) { var pool = SI.TYPES.filter(function (t) { return t.r !== 's' && !t.ev; }); return A.sheepURL(pool[A.hash(String(name).toLowerCase()) % pool.length]); }
+  function avatar(name) { var pool = SI.TYPES.filter(function (t) { return t.r !== 's' && !t.ev && !t.jg; }); return A.sheepURL(pool[A.hash(String(name).toLowerCase()) % pool.length]); }
   function memberRows(m, me) {
     var list = m.members.slice().sort(function (a, b) { return (b.owner ? 1 : 0) - (a.owner ? 1 : 0) || b.income - a.income; });
     return '<div class="cmem">' + list.map(function (x, i) {

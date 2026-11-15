@@ -58,7 +58,7 @@
     }
   }
   // Box öffnen: Wackeln (länger bei Seltenem), dann Blitz, Banner und Glitzer
-  var BANNER = { e: 'EPISCH!', l: 'LEGENDÄR!', m: 'MYTHISCH!', s: 'GEHEIM!' };
+  var BANNER = { e: 'EPISCH!', l: 'LEGENDÄR!', m: 'MYTHISCH!', x: 'EXOTISCH!', s: 'GEHEIM!', u: 'URALT!' };
   function flash(col) {
     var f = document.createElement('div'); f.className = 'flash'; f.style.background = col; document.body.appendChild(f);
     setTimeout(function () { f.remove(); }, 700);
@@ -74,11 +74,11 @@
     }
   }
   function reveal(o) {
-    var rc = o.rc, again = o.again || '', r = o.r || 'c', rare = 'elms'.indexOf(r) >= 0;
+    var rc = o.rc, again = o.again || '', r = o.r || 'c', rare = 'elmxsu'.indexOf(r) >= 0;
     // Die Seltenheit sieht man beim Öffnen nur daran, wie lange und wie stark die Kiste wackelt (Kai)
     // Karten wackeln wie eine zufällige Seltenheit, damit man sie vorher nicht erkennt (Kai)
     var shk = o.shake || r;
-    var wait = o.instant ? 10 : ({ c: 1000, r: 1300, e: 1800, l: 2400, m: 3000, s: 3000 }[shk] || 1000);
+    var wait = o.instant ? 10 : ({ c: 1000, r: 1300, e: 1800, l: 2400, m: 3000, x: 3400, s: 3000, u: 3400 }[shk] || 1000);
     modal('<div class="modal reveal opening" style="--wait:' + wait + 'ms">' +
       '<div class="stage"><div class="rays" hidden></div><img class="shake shk-' + shk + '" src="' + o.box + '" alt=""></div>' +
       (o.card ? '<div class="banner cardbanner" hidden>UPGRADE-KARTE!</div>' : '') +
@@ -129,7 +129,7 @@
           confetti(ov.querySelector('.modal'), r === 'e' ? 40 : 80, rc);
           if (navigator.vibrate) try { navigator.vibrate(r === 'e' ? 60 : r === 'l' ? [80, 40, 120] : [120, 50, 120, 50, 240]); } catch (e) { /* egal */ }
         }
-        if ('lms'.indexOf(r) >= 0) { // ganz selten: noch krasser
+        if ('lmxsu'.indexOf(r) >= 0) { // ganz selten: noch krasser
           document.body.classList.remove('quake'); void document.body.offsetWidth; document.body.classList.add('quake');
           setTimeout(function () { document.body.classList.remove('quake'); }, 800);
           for (var w = 0; w < (r === 'l' ? 2 : 4); w++) { var sw = document.createElement('div'); sw.className = 'shockwave'; sw.style.animationDelay = (w * 0.18) + 's'; st.appendChild(sw); }
@@ -158,14 +158,15 @@
       return;
     }
     var t = res.t, where = res.placed ? (res.built ? (G.pensOf(t.id).length > 1 ? ' · Gehege voll, ein weiteres Gehege wurde gebaut!' : ' · neues Gehege gebaut!') : '') : ' · wartet in der Scheune (kein Platz)';
-    if (('elms'.indexOf(t.r) >= 0 || res.isNew || res.built) && res.placed) pendingBurst = [t.id, SI.RAR[t.r].col, res.pen];
+    if (('elmxs'.indexOf(t.r) >= 0 || res.isNew || res.built) && res.placed) pendingBurst = [t.id, SI.RAR[t.r].col, res.pen];
     if (res.isNew) F.markNew(t.id);
     var mu = res.mut, mi = mu ? G.MUT[mu] : null;
     reveal({ rc: SI.RAR[t.r].col, r: t.r, box: res.box ? A.boxURL(res.box.k) : A.boxURL('herz'), pic: mu ? A.mutURL(t, mu) : A.sheepURL(t), isNew: res.isNew, newText: label === 'Baby · ' ? 'Neues Baby-Schaf!' : 'Neues Schaf entdeckt!', again: again,
-      big: 'lms'.indexOf(t.r) >= 0, mut: mu,
+      big: 'lmxs'.indexOf(t.r) >= 0, mut: mu,
       body: (mu ? '<div class="mutbanner mb-' + mu + '">' + '<span>' + (mu === 'r' ? '🌈' : '✨') + '</span> ' + mi.n + '! ×' + mi.x + ' Geld</div>' : '') +
         '<div class="rlabel">' + (label || '') + SI.RAR[t.r].n + '</div><h2>' + esc(mutName(t, mu)) + '</h2><p class="num">+' + fmt(t.inc * (mi ? mi.x : 1)) + ' Münzen pro Sek.' + where + '</p>' +
         (res.mutNew ? '<p class="hint">Neu im Sammelbuch bei den Mutationen!</p>' : '') });
+    if (res.art && SI.jg) SI.jg.found(res.art);
   }
   // Deko erst im Lager zeigen, wenn die Kiste ganz offen ist (Kai)
   var hiddenDeko = {};
@@ -449,6 +450,12 @@
         '<div class="odds">' + oddsChips(nb) + '</div>' +
         costBtn(G.boxPrice('nacho'), 'open:nacho', 'Öffnen') + '</div></div>';
     } else h += '<p class="hint center">🌮 Jeden Dienstag ist Taco Tuesday mit der Nacho-Box!</p>';
+    // Dschungel-Event: Dschungelkiste (Kai: 5 T, 5 % Exotisch)
+    if (SI.jungleOn()) {
+      var jb = SI.JBOX;
+      h += '<div class="boxcard bx-dschungel jungle"><img src="' + A.boxURL('dschungel') + '" alt=""><div style="min-width:0"><div class="jgtag"><span>🌴</span> Nur im Dschungel-Event</div><h3>' + esc(jb.n) + '</h3>' +
+        '<div class="odds">' + oddsChips(jb) + '</div>' + costBtn(G.boxPrice('dschungel'), 'open:dschungel', 'Öffnen') + '</div></div>';
+    }
     SI.BOX.forEach(function (b) {
       var chips = oddsChips(b);
       if (!G.boxUnlocked(b.k)) {
@@ -517,12 +524,12 @@
   VIEWS.buch = function () {
     var h = '<div class="tabs"><button class="' + (bookTab === 'schafe' ? 'on' : '') + '" data-act="book:schafe">Schafe</button><button class="' + (bookTab === 'mut' ? 'on' : '') + '" data-act="book:mut">Mutationen</button><button class="' + (bookTab === 'deko' ? 'on' : '') + '" data-act="book:deko">Deko</button></div>';
     if (bookTab === 'mut') {
-      var MF = G.S.mutFound || {}, mt = SI.TYPES.length * 2, mn = Object.keys(MF).filter(function (k) { return T[k.split(':')[0]]; }).length;
+      var MF = G.S.mutFound || {}, mt = SI.TYPES.filter(function (t) { return !t.special; }).length * 2, mn = Object.keys(MF).filter(function (k) { return T[k.split(':')[0]]; }).length;
       h += '<div class="bar"><i style="width:' + (mn / mt * 100) + '%"></i></div><p class="hint num">' + mn + ' von ' + mt + ' Mutationen gefunden.</p>';
       h += '<div class="card mutinfo"><p>✨ Glänzend bringt ×2 Geld und kommt in 2 % der Fälle.</p><p>🌈 Regenbogen bringt ×5 Geld, ist aber sehr selten (0,2 %).</p><p class="hint">Mutationen gibt es aus Kisten und beim Züchten.</p></div>';
       SI.RORDER.forEach(function (r) {
         h += '<h3 class="rc-' + r + '" style="font-size:17px">' + SI.RAR[r].n + '</h3><div class="grid">';
-        SI.TYPES.filter(function (t) { return t.r === r; }).sort(function (a, b) { return a.inc - b.inc; }).forEach(function (t) {
+        SI.TYPES.filter(function (t) { return t.r === r && !t.special; }).sort(function (a, b) { return a.inc - b.inc; }).forEach(function (t) {
           ['g', 'r'].forEach(function (k) {
             var f = MF[t.id + ':' + k];
             h += '<div class="tile' + (f ? ' mt-' + k : '') + '"><img' + (f ? ' class="mut-' + k + '"' : '') + ' src="' + (f ? A.mutURL(t, k) : A.sheepURL(t, true)) + '" alt=""><b>' + (f ? esc(mutName(t, k)) : '???') + '</b><small>' + (k === 'r' ? '🌈 ×5' : '✨ ×2') + '</small></div>';
@@ -538,10 +545,10 @@
       h += '<div class="card setbonus"><b>✨ Sammel-Bonus: +' + Math.round(G.setBonus() * 100) + ' % Geld</b><p class="hint">Für jede Seltenheit, bei der du alle Schafe gefunden hast, bekommst du +10 % Geld.</p></div>';
       SI.RORDER.forEach(function (r) {
         var all = SI.TYPES.filter(function (t) { return t.r === r; }), got = all.filter(function (t) { return G.S.found[t.id]; }).length, done = got === all.length;
-        h += '<h3 class="rc-' + r + ' sethd" style="font-size:17px">' + SI.RAR[r].n + ' <small class="num' + (done ? ' setok' : '') + '">' + (done ? '✓ +10 % Geld' : got + ' / ' + all.length) + '</small></h3><div class="grid">';
+        h += '<h3 class="rc-' + r + ' sethd" style="font-size:17px">' + SI.RAR[r].n + ' <small class="num' + (done ? ' setok' : '') + '">' + (done && r !== 'u' ? '✓ +10 % Geld' : got + ' / ' + all.length) + '</small></h3><div class="grid">';
         all.sort(function (a, b) { return a.inc - b.inc; }).forEach(function (t) { // wenigstes Geld zuerst
           var f = G.S.found[t.id], rec = t.r === 's' && f ? recipeOf(t.id) : null;
-          h += '<div class="tile"><img src="' + A.sheepURL(t, !f) + '" alt=""><b>' + (f ? esc(t.n) : '???') + '</b><small class="num">' + (f ? '+' + fmt(t.inc) + '/Sek. · ' + esc(t.pen.name) : (t.r === 's' ? 'Geheim! Nur durch Zucht' : 'noch nicht gefunden')) + '</small>' +
+          h += '<div class="tile"><img src="' + A.sheepURL(t, !f) + '" alt=""><b>' + (f ? esc(t.n) : '???') + '</b><small class="num">' + (t.special ? (f ? '+10 % Geld für immer' : 'Belohnung für alle 4 Artefakte') : f ? '+' + fmt(t.inc) + '/Sek. · ' + esc(t.pen.name) : (t.r === 's' ? 'Geheim! Nur durch Zucht' : 'noch nicht gefunden')) + '</small>' +
             (rec ? '<div class="recipe"><img src="' + A.sheepURL(T[rec[0]]) + '" alt=""><span>+</span><img src="' + A.sheepURL(T[rec[1]]) + '" alt=""></div><small class="rectx">' + esc(T[rec[0]].n) + ' + ' + esc(T[rec[1]].n) + '</small>' : '') + '</div>';
         });
         h += '</div>';
@@ -751,7 +758,7 @@
       '<div class="seg"><button class="' + (adm.kind === 'sheep' ? 'on' : '') + '" data-act="admKind:sheep">Schaf</button><button class="' + (adm.kind === 'deko' ? 'on' : '') + '" data-act="admKind:deko">Deko</button><button class="' + (adm.kind === 'money' ? 'on' : '') + '" data-act="admKind:money">Geld</button></div>';
     if (adm.kind === 'sheep') {
       h += '<label class="field">Welches Schaf?<select data-form="sheep">' + SI.RORDER.map(function (r) {
-        return '<optgroup label="' + SI.RAR[r].n + '">' + SI.TYPES.filter(function (t) { return t.r === r; }).map(function (t) {
+        return '<optgroup label="' + SI.RAR[r].n + '">' + SI.TYPES.filter(function (t) { return t.r === r && !t.special; }).map(function (t) {
           return '<option value="' + t.id + '"' + (adm.sheep === t.id ? ' selected' : '') + '>' + esc(t.n) + ' (+' + fmt(t.inc) + '/Sek.)</option>';
         }).join('') + '</optgroup>';
       }).join('') + '</select></label>' +
@@ -858,7 +865,7 @@
   var BTABS = [['income', 'Geld/Sek.', 'coin'], ['playtime', 'Spielzeit', 'sonne'], ['duels', 'Duell-Siege', 'pokal'], ['clubs', 'Clubs', 'schild']];
   function boardVal(v) { return boardTab === 'income' || boardTab === 'clubs' ? fmt(v) + '/Sek.' : boardTab === 'playtime' ? G.fmtTime(v) : v + (v == 1 ? ' Sieg' : ' Siege'); }
   function clubTag(r) { return r.club && SI.club ? '<span class="ctag">' + SI.club.crest(r.crest, 16) + esc(r.club) + '</span>' : ''; }
-  function avatar(name) { var pool = SI.TYPES.filter(function (t) { return t.r !== 's'; }); return A.sheepURL(pool[A.hash(name.toLowerCase()) % pool.length]); }
+  function avatar(name) { var pool = SI.TYPES.filter(function (t) { return t.r !== 's' && !t.jg; }); return A.sheepURL(pool[A.hash(name.toLowerCase()) % pool.length]); }
   VIEWS.board = function () {
     var h = '<div class="btabs">' + BTABS.map(function (x) {
       return '<button class="' + (boardTab === x[0] ? 'on' : '') + '" data-act="btab:' + x[0] + '"><img src="' + A.iconURL(x[2]) + '" alt="">' + x[1] + '</button>';
@@ -1025,7 +1032,7 @@
         i = +arg; v = +parts[2]; var sp = G.S.pens[i]; if (!sp || !(v > 0)) break;
         if (a === 'sellYes') nextModal();
         if (G.sheepCount() - v < 1) { SFX('cant'); toast('Dein letztes Schaf kannst du nicht verkaufen.'); break; }
-        if (a === 'sell' && ('elms'.indexOf(T[sp.t].r) >= 0 || v >= sp.n)) {
+        if (a === 'sell' && ('elmxs'.indexOf(T[sp.t].r) >= 0 || v >= sp.n)) {
           modal('<div class="modal"><img src="' + A.sheepURL(T[sp.t]) + '" alt="" style="width:120px;height:106px;align-self:center"><h2>Wirklich verkaufen?</h2>' +
             '<p><b>' + v + '× ' + esc(T[sp.t].n) + '</b> für <b class="num">+' + fmt(v * G.sellValue(sp.t)) + '</b> Münzen.</p><p class="hint">Verkaufte Schafe kommen nicht zurück.</p>' +
             '<div class="btns"><button class="btn ghost" data-act="close">Abbrechen</button><button class="btn red" data-act="sellYes:' + i + ':' + v + '">Verkaufen</button></div></div>');
@@ -1039,7 +1046,7 @@
         var bt = arg, bn = Math.min(+parts[2] | 0, G.extras(bt)); if (!T[bt] || bn <= 0) break;
         if (a === 'bsellYes') nextModal();
         if (G.sheepCount() - bn < 1) { SFX('cant'); toast('Dein letztes Schaf kannst du nicht verkaufen.'); break; }
-        if (a === 'bsell' && ('elms'.indexOf(T[bt].r) >= 0 || bn >= 10)) {
+        if (a === 'bsell' && ('elmxs'.indexOf(T[bt].r) >= 0 || bn >= 10)) {
           modal('<div class="modal"><img src="' + A.sheepURL(T[bt]) + '" alt="" style="width:120px;height:106px;align-self:center"><h2>Wirklich verkaufen?</h2>' +
             '<p><b>' + bn + '× ' + esc(T[bt].n) + '</b> für <b class="num">+' + fmt(bn * G.sellValue(bt)) + '</b> Münzen.</p><p class="hint">Verkaufte Schafe kommen nicht zurück.</p>' +
             '<div class="btns"><button class="btn ghost" data-act="close">Abbrechen</button><button class="btn red" data-act="bsellYes:' + bt + ':' + bn + '">Verkaufen</button></div></div>');
@@ -1102,7 +1109,7 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (modalOpen) closeModal(); else if (sheet) closeSheet(); else setMode('normal'); } });
 
   /* ---------- für duel.js ---------- */
-  SI.ui = { toast: toast, modal: modal, nextModal: nextModal, closeModal: closeModal, esc: esc, SFX: SFX, flash: function (c) { flash(c); }, sparks: sparks,
+  SI.ui = { toast: toast, modal: modal, nextModal: nextModal, closeModal: closeModal, esc: esc, SFX: SFX, flash: function (c) { flash(c); }, sparks: sparks, confetti: confetti, reveal: reveal, hud: hud, admin: function () { return !!(me && me.admin); },
     me: function () { return me; }, refresh: refresh, renderSheet: renderSheet, openSheet: openSheet, closeSheet: closeSheet,
     sheepReveal: sheepReveal, turnierReveal: turnierReveal, dekoReveal: dekoReveal, setMode: function (m) { setMode(m); },
     sheet: function () { return sheet; }, saveLocal: saveLocal, saveCloud: saveCloud, views: VIEWS, modalOpen: function () { return modalOpen; }, hooks: [] };

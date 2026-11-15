@@ -1008,3 +1008,68 @@ end $$;
 grant execute on function public.sp_club_invite(uuid, text) to anon;
 grant execute on function public.sp_club_invites(uuid) to anon;
 grant execute on function public.sp_club_answer(uuid, uuid, boolean) to anon;
+
+-- ===================== Dschungel-Event (Teil 9) =====================
+-- Kai: Der Admin stellt die Umgebung (Wiese oder Dschungel) für alle Farmen um.
+-- Wenn jemand ein Verlorenes Artefakt findet, bekommen alle eine Nachricht.
+create table if not exists public.settings (
+  k text primary key,
+  v text not null
+);
+alter table public.settings enable row level security;
+revoke all on public.settings from anon, authenticated;
+insert into public.settings (k, v) values ('env', 'wiese') on conflict (k) do nothing;
+
+create or replace function public.sp_env()
+returns text language sql security definer set search_path = public as $$
+  select coalesce((select v from settings where k = 'env'), 'wiese');
+$$;
+
+create or replace function public.sp_admin_env(p_token uuid, p_env text)
+returns text language plpgsql security definer set search_path = public as $$
+declare me players;
+begin
+  select * into me from players where token = p_token;
+  if me.id is null then raise exception 'bad_token'; end if;
+  if not me.is_admin then raise exception 'not_admin'; end if;
+  if p_env not in ('wiese', 'dschungel') then raise exception 'bad_env'; end if;
+  insert into settings (k, v) values ('env', p_env) on conflict (k) do update set v = excluded.v;
+  return p_env;
+end $$;
+
+create table if not exists public.news (
+  id         bigint generated always as identity primary key,
+  player     uuid references public.players(id) on delete cascade,
+  username   text not null,
+  kind       text not null,
+  created_at timestamptz not null default now(),
+  unique (player, kind)
+);
+alter table public.news enable row level security;
+revoke all on public.news from anon, authenticated;
+
+-- Jeder Fund nur einmal pro Spieler und nur während des Events
+create or replace function public.sp_news_add(p_token uuid, p_kind text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare me players;
+begin
+  select * into me from players where token = p_token;
+  if me.id is null then raise exception 'bad_token'; end if;
+  if p_kind not in ('auge', 'maske', 'krone', 'amulett', 'waechter') then raise exception 'bad_kind'; end if;
+  if now() >= timestamptz '2026-11-24 00:00:00+00' then return false; end if;
+  insert into news (player, username, kind) values (me.id, me.username, p_kind) on conflict (player, kind) do nothing;
+  return found;
+end $$;
+
+-- Neue Nachrichten seit p_after (nur die letzten 2 Tage)
+create or replace function public.sp_news(p_after bigint)
+returns table (id bigint, username text, kind text, created_at timestamptz) language sql security definer set search_path = public as $$
+  select n.id, n.username, n.kind, n.created_at from news n
+  where n.id > coalesce(p_after, 0) and n.created_at > now() - interval '2 days'
+  order by n.id desc limit 10;
+$$;
+
+grant execute on function public.sp_env() to anon;
+grant execute on function public.sp_admin_env(uuid, text) to anon;
+grant execute on function public.sp_news_add(uuid, text) to anon;
+grant execute on function public.sp_news(bigint) to anon;

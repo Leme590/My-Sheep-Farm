@@ -1035,13 +1035,113 @@ html,body{height:100%;height:100dvh;overflow:hidden}
   .lchips{flex-direction:row;flex-wrap:wrap}
   .modebar{bottom:calc(env(safe-area-inset-bottom,0px) + 80px)}
 }
+
+/* ---------- Dschungel-Update ---------- */
+:root{--r-x:#14a845;--r-u:#c58a12}
+.rc-x{color:var(--r-x)}.rc-u{color:var(--r-u)}
+.money{cursor:pointer}
+.money:active{transform:scale(.97)}
+.stage .shake.shk-x,.stage .shake.shk-u{animation-name:shk-m}
+.rar-x .banner{background:linear-gradient(90deg,#0d7a32,#3fe07a,#d8ff6a,#3fe07a,#0d7a32);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:2px var(--out);text-shadow:none;animation:slam .55s cubic-bezier(.2,1.8,.4,1),rainbow 2s linear infinite}
+.modal.rar-x{box-shadow:0 0 0 4px #3fe07a,0 0 55px #14b84a!important;background:linear-gradient(#f2fff0,#d8f7d2)}
+.rar-x .stage .pic{animation:popin .5s cubic-bezier(.2,1.6,.4,1),glowp 1.4s ease-in-out .5s infinite}
+.bx-dschungel{--bxc:linear-gradient(135deg,#2f9a4a,#8ad65a)}
+.boxcard.jungle{background:linear-gradient(135deg,#eaffdf,#c8f0b4)!important}
+.jgtag{display:inline-block;background:linear-gradient(#3fc061,#1d7a34);color:#fff;border:2px solid var(--out);border-radius:999px;padding:1px 9px;font-family:var(--display);font-size:13px;text-shadow:var(--ts-s);margin-bottom:2px}
+.hchip.jgchip{background:linear-gradient(#5fd16a,#239a3c)!important;color:#fff;text-shadow:var(--ts-s);position:relative}
+.jhead{background:linear-gradient(90deg,#1d7a34,#3fc061);color:#fff;border:3px solid var(--out);border-radius:14px;padding:6px 12px;font-weight:900;text-align:center;text-shadow:var(--ts-s);margin-bottom:8px}
+.jpeds{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:8px 0}
+.jped{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;background:#eef2e6;border:3px solid var(--out);border-radius:14px;padding:8px 6px}
+.jped img{width:70px;height:70px;object-fit:contain}
+.jped.got{background:radial-gradient(circle at 50% 30%,#fffbe0,#d9f5c9)}
+.jped.got img{filter:drop-shadow(0 0 8px #ffd23f)}
+.jped b{font-family:var(--display);font-weight:400;font-size:15px}
+.jped small{font-size:12px;color:#556;line-height:1.25}
+.jcount{font-weight:900}
+.jwaechter{display:flex;gap:10px;align-items:center}
+.jwaechter img{width:90px;height:80px;flex:none;object-fit:contain}
+.jwaechter.got{background:linear-gradient(135deg,#fff6c8,#d9f5c9)}
+.jexp{text-align:center}
+.jexp p{text-align:left}
+.jtemple{width:180px;max-width:70%;display:block;margin:0 auto 4px}
+.jplays{margin:6px 0;font-weight:800}
+.jst{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.jst b{font-family:var(--display);font-weight:400;font-size:20px}
+.jsafe{background:#2fbf71;color:#fff;border-radius:999px;padding:2px 10px;font-weight:900;font-size:12.5px}
+.jdanger{background:#e8463c;color:#fff;border-radius:999px;padding:2px 10px;font-weight:900;font-size:12.5px}
+.jdots{display:flex;gap:3px;margin:8px 0;flex-wrap:wrap}
+.jdots i{flex:1;min-width:8px;height:10px;border-radius:5px;background:#d6dccb;border:1.5px solid var(--out)}
+.jdots i.safe{background:#bfe8c7}
+.jdots i.ok{background:#3fc061}
+.jdots i.now{background:#ffd23f;animation:mbob 1s ease-in-out infinite}
+.jdoors{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.jdoor{position:relative;aspect-ratio:3/4.4;border:3px solid var(--out);border-radius:40px 40px 8px 8px;background:linear-gradient(#a0703a,#6b4420);box-shadow:inset 0 0 0 5px #8b8270,0 4px 0 var(--out);display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;font:inherit;color:#fff}
+.jdoor.d1{background:linear-gradient(#5a8a3a,#2e5a1e)}.jdoor.d2{background:linear-gradient(#3a6a8a,#1e3a5a)}.jdoor.d3{background:linear-gradient(#8a3a4a,#5a1e2a)}
+.jdoor b{font-family:var(--display);font-weight:400;font-size:26px;text-shadow:var(--ts)}
+.jknob{position:absolute;right:16%;top:55%;width:8px;height:8px;border-radius:50%;background:#ffd23f;border:1.5px solid var(--out)}
+button.jdoor:active{transform:translateY(3px);box-shadow:inset 0 0 0 5px #8b8270,0 1px 0 var(--out)}
+button.jdoor:hover{filter:brightness(1.1)}
+.jdoor.opened{background:radial-gradient(circle at 50% 40%,#4a3a20,#1c1408);cursor:default;filter:saturate(.5) brightness(.8);animation:dopen .45s ease-out}
+.jdoor.opened.picked{filter:none}
+.jdoor.opened.picked{opacity:1;box-shadow:inset 0 0 0 5px #ffd23f,0 0 18px #ffd23f}
+.jdoor.opened.snake.picked{box-shadow:inset 0 0 0 5px #e8463c,0 0 18px #e8463c;animation:dopen .45s ease-out,jshake .5s .45s}
+@keyframes jshake{20%,60%{transform:translateX(-5px) rotate(-3deg)}40%,80%{transform:translateX(5px) rotate(3deg)}}
+@keyframes dopen{from{transform:scaleX(.2)}}
+.jin{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px;text-align:center}
+.jin img{width:44px;height:40px;object-fit:contain}
+.jin .dic{font-size:32px;line-height:1}
+.jin small{font-size:10.5px;font-weight:900;line-height:1.15;color:#fff;word-break:break-word}
+.jend{border:3px solid var(--out);border-radius:14px;padding:8px 10px;margin:6px 0 8px;text-align:center}
+.jend.bad{background:#ffe0dc}.jend.good{background:#fff3c4}
+.jend b{font-family:var(--display);font-weight:400;font-size:18px}
+.jend p{margin:2px 0 0}
+.jlh{margin:12px 0 4px;font-size:16px}
+.jloot{display:flex;flex-wrap:wrap;gap:6px}
+.jloot span{display:inline-flex;align-items:center;gap:4px;background:#f3f0e4;border:2px solid var(--out);border-radius:999px;padding:2px 10px;font-weight:900;font-size:13px}
+.jloot img{width:18px;height:18px}
+.modal.artm{text-align:center;background:radial-gradient(circle at 50% 20%,#f4fff0,#c9efc0)}
+.modal.artm.waechterm{background:radial-gradient(circle at 50% 20%,#fffbe0,#ffe58a)}
+.artglow{position:relative;align-self:center;width:150px;height:150px;display:flex;align-items:center;justify-content:center}
+.artglow::before{content:'';position:absolute;inset:-20px;background:repeating-conic-gradient(rgba(255,240,150,.7) 0 8deg,transparent 8deg 30deg);border-radius:50%;-webkit-mask:radial-gradient(circle,#000 20%,transparent 70%);mask:radial-gradient(circle,#000 20%,transparent 70%);animation:spin 6s linear infinite}
+.artglow img{position:relative;width:130px;height:130px;object-fit:contain;animation:popin .6s cubic-bezier(.2,1.6,.4,1),glowp 1.4s ease-in-out .6s infinite;--rc:#3fe07a}
+.arttag{align-self:center;background:linear-gradient(#3fc061,#1d7a34);color:#fff;border:2px solid var(--out);border-radius:999px;padding:2px 12px;font-family:var(--display);font-size:15px;text-shadow:var(--ts-s)}
+.waechterm .arttag{background:linear-gradient(#ffd23f,#e09a00)}
+.artcnt{font-weight:900}
+#jgNews{position:fixed;left:50%;top:calc(var(--hudb,70px) + 8px);transform:translateX(-50%);z-index:55;display:flex;flex-direction:column;gap:6px;width:min(94vw,420px);pointer-events:none}
+.jgnews{display:flex;align-items:center;gap:8px;background:linear-gradient(90deg,#1d7a34,#3fc061);color:#fff;border:3px solid var(--out);border-radius:16px;padding:6px 12px 6px 6px;font-weight:900;font-size:14px;text-shadow:var(--ts-s);box-shadow:0 4px 0 var(--out);animation:popin .45s cubic-bezier(.2,1.6,.4,1)}
+.jgnews img{width:42px;height:42px;object-fit:contain;flex:none}
+.jgnews.out{opacity:0;transform:translateY(-10px);transition:.6s}
+.moneym .mrow{display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:2px dashed #e2e2d6}
+.moneym .mi{width:28px;text-align:center;font-size:20px;flex:none}
+.moneym .mi img{width:24px;height:24px}
+.moneym .mn{flex:1;min-width:0;font-weight:800;display:flex;flex-direction:column;text-align:left}
+.moneym .mn small{font-weight:700;color:#778;font-size:12px}
+.moneym b{text-align:right;color:#2e9a22;display:flex;flex-direction:column;font-size:15px}
+.moneym b small{font-size:11.5px;color:#889}
+.moneym b.neg{color:var(--danger)}
+.moneym .mbase b{color:var(--ink,#222)}
+.moneym .mtot{border:none;background:#fff6d6;border-radius:12px;margin-top:6px}
+.moneym .mtot b{color:#c98a12;font-size:18px}
+.moneym .msep{font-family:var(--display);font-size:15px;margin:8px 0 0;color:#667}
+.envseg span{margin-right:3px}
+.modal.jupd{background:linear-gradient(#f2fff0,#cdeec2)}
+.jupbanner{align-self:center;font-family:var(--display);font-size:30px;color:#fff;text-shadow:var(--ts);background:linear-gradient(90deg,#1d7a34,#3fc061);border:3px solid var(--out);border-radius:16px;padding:2px 16px;transform:rotate(-2deg);animation:slam .55s cubic-bezier(.2,1.8,.4,1)}
+.jupsheep{display:flex;justify-content:center;gap:4px;margin:4px 0}
+.jupsheep img{width:64px;height:56px;object-fit:contain}
+.modal.jupd>*{flex-shrink:0}
+.jupl p{margin:5px 0;display:flex;gap:8px;align-items:flex-start;text-align:left;line-height:1.3}
+.jupl p>i{font-style:normal;font-size:20px;flex:none;width:26px;text-align:center}
+.jupl p>span{flex:1;min-width:0}
+.jupl p>span>b{display:block}
+.jwbig{font-family:var(--display);font-size:20px;color:#c98a12;margin:0}
+.jloot i{font-style:normal}
 </style>
 
 <canvas id="farm" aria-label="Deine Schaf-Farm"></canvas>
 
 <div class="hud" id="hud" hidden>
   <div class="hleft">
-    <div class="money">
+    <div class="money" role="button" tabindex="0" aria-label="Geld-Übersicht">
       <img id="coinImg" alt="">
       <div style="min-width:0"><b class="num" id="coinNum">0</b><small class="num" id="incNum">+0 pro Sek.</small></div>
     </div>
@@ -1050,6 +1150,7 @@ html,body{height:100%;height:100dvh;overflow:hidden}
       <button class="hchip questchip" data-act="sheet:quests" aria-label="Aufgaben">📜 Aufgaben<i class="dot" id="dotQuest" hidden></i></button>
       <button class="hchip visitchip" data-act="sheet:besuch" aria-label="Farmen besuchen">🏡 Besuchen</button>
       <button class="hchip clubchip" data-act="sheet:club" aria-label="Clubs">🛡️ Club</button>
+      <button class="hchip jgchip" id="jgChip" data-act="sheet:dschungel" aria-label="Dschungel" hidden><span>🌴</span> Dschungel<i class="dot" id="dotJg" hidden></i></button>
       <button class="hchip racechip" id="raceChip" data-act="sheet:rennen" aria-label="Schafrennen" hidden>🏁 Schafrennen!</button>
     </div>
   </div>
@@ -1102,6 +1203,7 @@ html,body{height:100%;height:100dvh;overflow:hidden}
 <script src="js/data.js"></script>
 <script src="js/art.js"></script>
 <script src="js/style.js"></script>
+<script src="js/jungle-art.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/net.js"></script>
 <script src="js/game.js"></script>
@@ -1113,6 +1215,7 @@ html,body{height:100%;height:100dvh;overflow:hidden}
 <script src="js/club.js"></script>
 <script src="js/race.js"></script>
 <script src="js/tutorial.js"></script>
+<script src="js/jungle.js"></script>
 <!--APP-END-->
 <script>
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

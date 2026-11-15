@@ -116,7 +116,7 @@
     h += '<p class="hint center">Tipp: In der Bestenliste (🏆) kannst du auch auf jeden Spieler tippen.</p>';
     return { title: 'Farmen besuchen', html: h };
   };
-  function avatar(name) { var pool = SI.TYPES.filter(function (t) { return t.r !== 's'; }); return A.sheepURL(pool[A.hash(String(name).toLowerCase()) % pool.length]); }
+  function avatar(name) { var pool = SI.TYPES.filter(function (t) { return t.r !== 's' && !t.jg; }); return A.sheepURL(pool[A.hash(String(name).toLowerCase()) % pool.length]); }
 
   document.addEventListener('input', function (e) { if (e.target.dataset && e.target.dataset.vis === 'name') V.nameIn = e.target.value; });
   document.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.vis === 'name') start(e.target.value); });

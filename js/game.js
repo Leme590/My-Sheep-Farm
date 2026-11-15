@@ -40,6 +40,8 @@
     });
     Object.keys(nc).forEach(function (k) { if (SI.CK[k].max) nc[k] = Math.min(SI.CK[k].max, nc[k]); });
     s.cards = nc;
+    s.arts = s.arts && typeof s.arts === 'object' ? s.arts : {}; s.jg = s.jg && typeof s.jg === 'object' ? s.jg : {};
+    if (s.waechter) s.found.waechter = 1;
     s.mut = s.mut && typeof s.mut === 'object' ? s.mut : {}; s.mutFound = s.mutFound && typeof s.mutFound === 'object' ? s.mutFound : {};
     G.S = s;
     // alte Spielstände (ohne Schaf-Anzahl pro Gehege): Gehege so voll wie möglich machen
@@ -138,10 +140,36 @@
   // Kai: +10 % Einnahmen für jede Seltenheit, die im Sammelbuch komplett ist
   G.SET_BONUS = 0.1;
   G.rarDone = function (r) { var f = G.S.found || {}; return SI.TYPES.every(function (t) { return t.r !== r || f[t.id]; }); };
-  G.setsDone = function () { return SI.RORDER.filter(G.rarDone); };
+  G.setsDone = function () { return SI.RORDER.filter(function (r) { return r !== 'u' && G.rarDone(r); }); }; // Uralt (Wächter) gibt schon selbst +10 %
   G.setBonus = function () { return G.SET_BONUS * G.setsDone().length; };
+  /* ---------- Verlorene Artefakte (Dschungel-Event, Kai) ---------- */
+  SI.ARTS = [
+    { k: 'auge', n: 'Smaragd-Auge', d: '+20 % Glück in allen Kisten und doppelte Chance auf Mutationen aus Kisten' },
+    { k: 'maske', n: 'Uralte Schafsmaske', d: 'Zucht 50 % schneller und mehr Glück beim Züchten' },
+    { k: 'krone', n: 'Jaguar-Krone', d: '+30 % Geld', money: 0.3 },
+    { k: 'amulett', n: 'Sonnen-Amulett', d: '+30 % Geld', money: 0.3 }
+  ];
+  SI.ART = {}; SI.ARTS.forEach(function (a) { SI.ART[a.k] = a; });
+  G.arts = function () { return G.S.arts || (G.S.arts = {}); };
+  G.hasArt = function (k) { return SI.jungleOn() && !!G.arts()[k]; };
+  G.artCount = function () { return SI.ARTS.filter(function (a) { return G.arts()[a.k]; }).length; };
+  // Würfelt ein Artefakt (1 zu n). Gibt das Artefakt zurück, wenn es neu gefunden wurde.
+  G.rollArt = function (k, n) {
+    if (!SI.jungleOn() || G.visiting || G.arts()[k] || Math.random() * n >= 1) return null;
+    return G.giveArt(k);
+  };
+  G.giveArt = function (k) {
+    if (!SI.ART[k] || G.arts()[k]) return null;
+    G.arts()[k] = Date.now();
+    var all = G.artCount() === SI.ARTS.length && !G.S.waechter;
+    if (all) { G.S.waechter = Date.now(); G.S.found.waechter = 1; }
+    return { k: k, a: SI.ART[k], waechter: all };
+  };
+  G.artMoney = function () { var m = 0; SI.ARTS.forEach(function (a) { if (a.money && G.hasArt(a.k)) m += a.money; }); return m; };
+  G.WAECHTER = 0.1; // Dschungelwächter: +10 % von allem
+  G.waechterMult = function () { return G.S.waechter ? 1 + G.WAECHTER : 1; };
   G.globalMult = function () {
-    return (1 + 0.05 * G.card('gold')) * (1 + G.dekoBonus()) * (1 + G.setBonus()) * G.rbMult() * G.boostMult();
+    return (1 + 0.05 * G.card('gold')) * (1 + G.dekoBonus()) * (1 + G.setBonus()) * (1 + G.artMoney()) * G.waechterMult() * G.rbMult() * G.boostMult();
   };
   // Geld-Booster aus Aufgaben: doppeltes Geld für eine Weile
   G.boostLeft = function () { var b = G.S.boost; return b && b.end > Date.now() ? (b.end - Date.now()) / 1000 : 0; };
@@ -149,7 +177,7 @@
   G.addBoost = function (sec) { var now = Date.now(), b = G.S.boost; G.S.boost = { end: Math.max(now, b && b.end || 0) + sec * 1000 }; };
   /* ---------- Mutationen (Kai): Glänzend gibt ×2 Geld, Regenbogen ×5 (sehr selten) ---------- */
   G.MUT = { g: { n: 'Glänzend', x: 2, p: 0.02, col: '#ffcf3a' }, r: { n: 'Regenbogen', x: 5, p: 0.002, col: '#ff5fd2' } };
-  G.rollMut = function () { var x = Math.random(); return x < G.MUT.r.p ? 'r' : x < G.MUT.r.p + G.MUT.g.p ? 'g' : null; };
+  G.rollMut = function (k) { k = k || 1; var x = Math.random(); return x < G.MUT.r.p * k ? 'r' : x < (G.MUT.r.p + G.MUT.g.p) * k ? 'g' : null; };
   // [glänzend, regenbogen] einer Sorte, nie mehr als Schafe da sind (zuerst gehen glänzende verloren)
   G.mutOf = function (t) {
     var m = (G.S.mut || {})[t]; if (!m) return [0, 0];
@@ -278,7 +306,7 @@
   }
   // Taco Tuesday: jeden Dienstag (Ortszeit). G.tacoForce nur zum Testen.
   G.isTaco = function () { return !!G.tacoForce || new Date().getDay() === 2; };
-  G.boxUnlocked = function (k) { var b = SI.BK[k]; if (b.ev === 'taco') return G.isTaco(); return !b.rb || G.S.rebirths >= b.rb; };
+  G.boxUnlocked = function (k) { var b = SI.BK[k]; if (b.ev === 'taco') return G.isTaco(); if (b.jg) return SI.jungleOn(); return !b.rb || G.S.rebirths >= b.rb; };
   G.openBox = function (k, free) {
     var b = SI.BK[k], S = G.S;
     if (!free) {
@@ -292,12 +320,13 @@
       var c = rollCard(); S.cards[c.k] = G.card(c.k) + 1;
       return { card: c, box: b };
     }
-    var r = rollRarity(b.odds, G.cardBonus('glueck') / 100);
-    var pool = SI.TYPES.filter(function (x) { return x.r === r && (x.ev || null) === (b.ev || null); });
-    if (!pool.length) pool = SI.TYPES.filter(function (x) { return x.r === r && !x.ev; });
+    var r = rollRarity(b.odds, G.cardBonus('glueck') / 100 + (G.hasArt('auge') ? 0.2 : 0));
+    var pool = SI.TYPES.filter(function (x) { return x.r === r && !x.special && (b.jg ? x.jg && !x.ev : (x.ev || null) === (b.ev || null)); });
+    if (!pool.length) pool = SI.TYPES.filter(function (x) { return x.r === r && !x.ev && !x.special; });
     var t = rnd(pool);
-    var res = G.addSheep(t.id), mu = G.rollMut(), mnew = mu ? G.addMut(t.id, mu) : false;
-    return { t: t, box: b, isNew: res.isNew, placed: res.placed, built: res.built, pen: res.pen, mut: mu, mutNew: mnew };
+    var res = G.addSheep(t.id), mu = G.rollMut(G.hasArt('auge') ? 2 : 1), mnew = mu ? G.addMut(t.id, mu) : false;
+    var art = G.rollArt('auge', 7500); // Verlorenes Artefakt (Kai: 1 zu 7500 bei jeder Mystery-Box)
+    return { t: t, box: b, isNew: res.isNew, placed: res.placed, built: res.built, pen: res.pen, mut: mu, mutNew: mnew, art: art };
   };
 
   // Turnier-Kiste: 3 zufällige Belohnungen (Schaf, Deko oder Münzen)
@@ -384,8 +413,8 @@
   G.recipeKey = function (a, b) { return [a, b].sort().join('+'); };
   G.breedCost = function (a, b) { return Math.ceil(30 * (T[a].inc + T[b].inc)); };
   G.breedTime = function (a, b) {
-    var f = { c: 1, r: 2, e: 4, l: 8, m: 12, s: 10 };
-    return 30 * Math.max(f[T[a].r], f[T[b].r]) * (1 - G.cardBonus('hirte') / 100);
+    var f = { c: 1, r: 2, e: 4, l: 8, m: 12, x: 16, s: 10, u: 16 };
+    return 30 * Math.max(f[T[a].r] || 1, f[T[b].r] || 1) * (1 - G.cardBonus('hirte') / 100) * (G.hasArt('maske') ? 0.5 : 1);
   };
   G.startBreed = function (a, b) {
     if (G.S.breed) return false;
@@ -401,12 +430,13 @@
       var ra = T[br.a].r === 's' ? 'l' : T[br.a].r, rb = T[br.b].r === 's' ? 'l' : T[br.b].r;
       var ri = Math.max(SI.RORDER.indexOf(ra), SI.RORDER.indexOf(rb));
       var r = SI.RORDER[ri];
-      if (Math.random() < 0.15 + G.cardBonus('hirte') / 100 && ri < 4) r = SI.RORDER[ri + 1]; // Hirtenstab: mehr Glück
-      t = rnd(SI.TYPES.filter(function (x) { return x.r === r && !x.ev; }));
+      if (Math.random() < 0.15 + G.cardBonus('hirte') / 100 + (G.hasArt('maske') ? 0.15 : 0) && ri < 4) r = SI.RORDER[ri + 1]; // Hirtenstab und Maske: mehr Glück
+      t = rnd(SI.TYPES.filter(function (x) { return x.r === r && !x.ev && !x.special; }));
     }
     var res = G.addSheep(t.id), mu = G.rollMut(), mnew = mu ? G.addMut(t.id, mu) : false;
     G.S.breed = null; G.S.stats.breeds++;
-    return { t: t, isNew: res.isNew, placed: res.placed, mut: mu, mutNew: mnew };
+    var art = G.rollArt('maske', 300); // Kai: 1 zu 300 beim Züchten
+    return { t: t, isNew: res.isNew, placed: res.placed, mut: mu, mutNew: mnew, art: art };
   };
 
   /* ---------- Tägliche Belohnung ---------- */
