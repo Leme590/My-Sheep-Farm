@@ -7,8 +7,10 @@
   var MODES = {
     rps: { n: 'Schere Stein Papier', ic: '✌️', d: 'Wer zuerst 3 Runden gewinnt' },
     ttt: { n: 'Tic Tac Toe', ic: '⭕', d: 'Drei in einer Reihe' },
-    c4: { n: 'Vier gewinnt', ic: '🔴', d: 'Vier in einer Reihe' }
+    c4: { n: 'Vier gewinnt', ic: '🔴', d: 'Vier in einer Reihe' },
+    chess: { n: 'Schaf-Schach', ic: '♞', d: 'Setz den König schachmatt' }
   };
+  var PN = { p: 'Bauer', n: 'Springer', b: 'Läufer', r: 'Turm', q: 'Dame', k: 'König' };
   var RPS = [{ ic: '✌️', n: 'Schere' }, { ic: '✊', n: 'Stein' }, { ic: '✋', n: 'Papier' }];
 
   var D = {
@@ -121,6 +123,12 @@
     if (v.reason === 'forfeit' && info.win === 'opp') why = 'Du hast aufgegeben.';
     if (v.reason === 'timeout' && info.win === 'opp') why = 'Du hast zu lange gebraucht.';
     info.why = why;
+    if (v.mode === 'chess' && v.state === 'done' && v.game) {
+      var cg = v.game;
+      if (cg.mate) info.why = info.win === 'me' ? 'Schachmatt! Du hast den König gefangen.' : 'Schachmatt! ' + v.opp + ' hat deinen König gefangen.';
+      else if (cg.stale) info.why = 'Patt! Keiner kann mehr ziehen.';
+      else if (cg.nomat) info.why = 'Remis! Keiner kann mehr gewinnen.';
+    }
     if (D.shownId === v.id || (D.cur && D.cur.id === v.id)) {
       D.final = v; D.finalInfo = info; D.cur = null; D.shownId = v.id;
       var wait = v.game && v.state === 'done' ? (v.mode === 'rps' ? 2100 : 1300) : 0;
@@ -285,7 +293,7 @@
       if (sig === D.setupSig) return;
       D.setupSig = sig;
       $('#duModes').innerHTML = Object.keys(MODES).map(function (k) {
-        var m = MODES[k]; return '<button class="dumode' + (v.mode === k ? ' on' : '') + '" data-act="duMode:' + k + '"><span>' + m.ic + '</span><b>' + m.n + '</b><small>' + m.d + '</small></button>';
+        var m = MODES[k]; return '<button class="dumode' + (v.mode === k ? ' on' : '') + '" data-act="duMode:' + k + '"><span>' + (k === 'chess' ? '<img src="' + A.chessURL('N') + '" alt="">' : m.ic) + '</span><b>' + m.n + '</b><small>' + m.d + '</small></button>';
       }).join('');
       $('#duModeBy').textContent = v.mode_by == null ? 'Ihr könnt beide das Spiel ändern.' : (v.mode_by === v.side ? 'Du hast ' : v.opp + ' hat ') + MODES[v.mode].n + ' ausgesucht.';
       renderPick();
@@ -306,7 +314,7 @@
     if (ph === 'play' || ph === 'cd') timeBar(v);
   }
   function timeBar(v) {
-    var l = left(v, 'left'), full = v.mode === 'rps' ? 20000 : 30000, bar = $('#duBar'), t = $('#duTimeT');
+    var l = left(v, 'left'), full = v.mode === 'rps' ? 20000 : v.mode === 'chess' ? 90000 : 30000, bar = $('#duBar'), t = $('#duTimeT');
     if (l == null || !bar) return;
     if (left(v, 'start_in') > 0) l = full;
     l = Math.max(0, l);
@@ -367,6 +375,7 @@
       }).join('') + '</div></div>';
       return h;
     }
+    if (v.mode === 'chess') return chessHtml(v, ph, playing);
     var b = g.b || [], wl = g.wl || [], myT = playing && v.turn === me;
     if (ph !== 'end') {
       var you = v.mode === 'ttt' ? '<img class="tico" src="' + A.sheepURL(T.wiese) + '" alt="">Du bist das weiße Schaf' : '<i class="disc mine"></i>Du bist Rot';
@@ -397,6 +406,63 @@
       h += '</div></div>';
     }
     return h;
+  }
+  /* ---------- Schaf-Schach ---------- */
+  var CSTART = { p: 8, n: 2, b: 2, r: 2, q: 1 };
+  function taken(b, white) { // geschlagene Figuren einer Farbe
+    var out = [];
+    Object.keys(CSTART).forEach(function (k) {
+      var ch = white ? k.toUpperCase() : k, n = b.split(ch).length - 1;
+      for (var i = n; i < CSTART[k]; i++) out.push(ch);
+    });
+    return out;
+  }
+  function chessHtml(v, ph, playing) {
+    var g = v.game || {}, me = v.side, CH = SI.chess, white = g.wh === me, myT = playing && v.turn === me, h = '';
+    if (!g.b) return h;
+    var fresh = D.chVer !== v.id + ':' + v.ver;
+    if (fresh) {
+      D.chVer = v.id + ':' + v.ver; D.chSel = -1;
+      if (myT && g.n > 0) SFX('place');
+    }
+    D.chLegal = myT ? CH.legal(g, me) : [];
+    var sel = D.chSel, tg = {}, lm = Array.isArray(g.lm) ? g.lm : [];
+    if (sel >= 0) D.chLegal.forEach(function (m) { if ((m >> 6) === sel) tg[m & 63] = 1; });
+    var moverW = lm.length && g.b[lm[1]] >= 'A' && g.b[lm[1]] <= 'Z', kSq = g.chk && lm.length ? g.b.indexOf(moverW ? 'k' : 'K') : -1;
+    var meK = A.chessURL(white ? 'K' : 'k');
+    if (ph !== 'end') {
+      h += '<div class="dutop"><span class="duyou"><img class="tico" src="' + meK + '" alt="">' + (white ? 'Du spielst Weiß' : 'Du spielst Schwarz') + '</span>' +
+        '<span class="duturnpill' + (myT ? ' me' : '') + '">' + (ph === 'cd' ? 'Gleich geht es los!' : myT ? 'Du bist dran!' : esc(v.opp) + ' ist dran …') + '</span></div>';
+    }
+    if (g.mate) h += '<p class="chchk mate">Schachmatt!</p>';
+    else if (g.chk) h += '<p class="chchk">' + (kSq >= 0 && (g.b[kSq] === 'K') === white ? 'Schach! Rette deinen König!' : 'Schach!') + '</p>';
+    var tk = function (wh) { return '<div class="chtk">' + taken(g.b, wh).map(function (p) { return '<img src="' + A.chessURL(p) + '" alt="">'; }).join('') + '</div>'; };
+    h += tk(white);
+    h += '<div class="chb' + (myT ? ' myturn' : '') + '">';
+    for (var di = 0; di < 64; di++) {
+      var sq = white ? di : 63 - di, r = sq >> 3, c = sq & 7, p = g.b[sq], dark = (r + c) % 2 === 1;
+      var mineP = p !== '.' && (p >= 'A' && p <= 'Z') === white, can = myT && (mineP || tg[sq]);
+      h += '<button class="chq' + (dark ? ' dk' : '') + (sq === sel ? ' sel' : '') + (tg[sq] ? (p !== '.' ? ' cap' : ' to') : '') +
+        (lm.indexOf(sq) >= 0 ? ' lm' : '') + (sq === kSq ? ' chk' : '') + (fresh && sq === lm[1] ? ' mv' : '') + '" data-act="duSq:' + sq + '"' + (can ? '' : ' disabled') + '>' +
+        (p !== '.' ? '<img src="' + A.chessURL(p) + '" alt="' + PN[p.toLowerCase()] + '">' : '') +
+        (di % 8 === 0 ? '<i class="chr">' + (8 - r) + '</i>' : '') + (di >= 56 ? '<i class="chf">' + 'abcdefgh'[c] + '</i>' : '') + '</button>';
+    }
+    h += '</div>';
+    h += tk(!white);
+    if (ph === 'play' && myT) h += '<p class="chhint">' + (sel >= 0 ? 'Tippe auf ein grünes Feld, um zu ziehen.' : 'Tippe auf eine deiner Figuren.') + '</p>';
+    return h;
+  }
+  function chessClick(v, sq) {
+    if (!v || v.state !== 'play' || v.mode !== 'chess' || v.turn !== v.side) return;
+    var gm = v.game, mv = D.chSel * 64 + sq;
+    if (D.chSel >= 0 && (D.chLegal || []).indexOf(mv) >= 0) {
+      D.chSel = -1; SFX(gm.b[sq] !== '.' ? 'hit' : 'place');
+      N.duel.move(tok(), v.id, mv).then(function (r) { if (r.state === 'play') setCur(r); else poll(); }).catch(err);
+    } else {
+      var pc = gm.b[sq], wh = gm.wh === v.side;
+      if (pc !== '.' && (pc >= 'A' && pc <= 'Z') === wh && sq !== D.chSel) { D.chSel = sq; SFX('pick'); } else { D.chSel = -1; SFX('unpick'); }
+    }
+    var gg = $('#duGame'); if (gg) gg.dataset.ver = ''; render();
   }
   function renderPick() {
     var p = $('#duPick'); if (!p) return;
@@ -462,6 +528,7 @@
           .then(function (r) { SFX(want ? 'lvl' : 'unpick'); setCur(r); })
           .catch(err).then(function () { D.sending = false; render(); });
         break;
+      case 'duSq': chessClick(v, +arg); break;
       case 'duMove':
         if (!v || v.state !== 'play') break;
         SFX('place');

@@ -210,7 +210,7 @@ create table if not exists public.duels (
   a           uuid not null references public.players(id) on delete cascade,  -- wer einlädt
   b           uuid not null references public.players(id) on delete cascade,  -- wer eingeladen wird
   state       text not null default 'invite',   -- invite, setup, play, done, gone
-  mode        text not null default 'rps',      -- rps, ttt, c4
+  mode        text not null default 'rps',      -- rps, ttt, c4, chess
   mode_by     smallint,
   a_stake     jsonb not null default '{"money":0,"sheep":{}}'::jsonb,
   b_stake     jsonb not null default '{"money":0,"sheep":{}}'::jsonb,
@@ -376,7 +376,7 @@ begin
   if d.state <> 'setup' then raise exception 'duel_locked'; end if;
   s := case when d.a = me.id then 0 else 1 end;
   if p_mode is not null then
-    if p_mode not in ('rps', 'ttt', 'c4') then raise exception 'bad_amount'; end if;
+    if p_mode not in ('rps', 'ttt', 'c4', 'chess') then raise exception 'bad_amount'; end if;
     if p_mode <> d.mode then ch := true; update duels set mode = p_mode, mode_by = s where id = d.id; end if;
   end if;
   if p_stake is not null then
@@ -428,9 +428,10 @@ begin
       game = case d.mode
         when 'rps' then jsonb_build_object('pa', -1, 'pb', -1, 'sa', 0, 'sb', 0, 'round', 1)
         when 'ttt' then jsonb_build_object('b', to_jsonb(array_fill(-1, array[9])), 'g', 1, 'first', f, 'lm', -1)
+        when 'chess' then jsonb_build_object('b', 'rnbqkbnrpppppppp' || repeat('.', 32) || 'PPPPPPPPRNBQKBNR', 'wh', f, 'cr', 'KQkq', 'ep', -1, 'hm', 0, 'n', 0, 'lm', -1, 'chk', false)
         else jsonb_build_object('b', to_jsonb(array_fill(-1, array[42])), 'lm', -1) end,
       turn = case when d.mode = 'rps' then null else f end,
-      deadline = now() + interval '3.5 seconds' + case when d.mode = 'rps' then interval '20 seconds' else interval '30 seconds' end,
+      deadline = now() + interval '3.5 seconds' + case when d.mode = 'rps' then interval '20 seconds' when d.mode = 'chess' then interval '90 seconds' else interval '30 seconds' end,
       ver = ver + 1
     where id = d.id returning * into d;
   end if;
@@ -446,12 +447,125 @@ begin
   return v;
 end $$;
 
--- Ein Zug: Schere(0)/Stein(1)/Papier(2), ein Feld (0-8) oder eine Spalte (0-6)
+-- Schaf-Schach (Kai, 17.11.2026): Brett = 64 Zeichen, Feld 0 = a8, 63 = h1, große Buchstaben = Weiß, '.' = leer.
+-- Ein Zug = von * 64 + nach. Genau dieselben Regeln wie in js/chess.js.
+create or replace function public.chess_at(b text, r int, c int)
+returns text language sql immutable as $$
+  select case when r between 0 and 7 and c between 0 and 7 then substr(b, r * 8 + c + 1, 1) else '#' end;
+$$;
+
+create or replace function public.chess_attacked(b text, sq int, byw boolean)
+returns boolean language plpgsql immutable as $$
+declare r int := sq / 8; c int := sq % 8; d int[]; k int; p text; dr int; pp text; n text; kk text; rq text; bq text;
+begin
+  if byw then pp := 'P'; n := 'N'; kk := 'K'; rq := 'RQ'; bq := 'BQ'; dr := 1;
+  else pp := 'p'; n := 'n'; kk := 'k'; rq := 'rq'; bq := 'bq'; dr := -1; end if;
+  if chess_at(b, r + dr, c - 1) = pp or chess_at(b, r + dr, c + 1) = pp then return true; end if;
+  foreach d slice 1 in array array[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]] loop
+    if chess_at(b, r + d[1], c + d[2]) = n then return true; end if;
+  end loop;
+  foreach d slice 1 in array array[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]] loop
+    if chess_at(b, r + d[1], c + d[2]) = kk then return true; end if;
+  end loop;
+  foreach d slice 1 in array array[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]] loop
+    k := 1;
+    loop
+      p := chess_at(b, r + d[1] * k, c + d[2] * k);
+      exit when p <> '.';
+      k := k + 1;
+    end loop;
+    if p <> '#' and strpos(case when d[1] = 0 or d[2] = 0 then rq else bq end, p) > 0 then return true; end if;
+  end loop;
+  return false;
+end $$;
+
+create or replace function public.chess_apply(b text, f int, t int, ep int)
+returns text language plpgsql immutable as $$
+declare p text := substr(b, f + 1, 1); lp text := lower(substr(b, f + 1, 1)); nb text := b;
+begin
+  if lp = 'p' and t = ep and substr(b, t + 1, 1) = '.' then nb := overlay(nb placing '.' from (f / 8) * 8 + t % 8 + 1 for 1); end if;
+  if lp = 'p' and (t / 8 = 0 or t / 8 = 7) then p := case when p = 'P' then 'Q' else 'q' end; end if;
+  nb := overlay(nb placing p from t + 1 for 1);
+  nb := overlay(nb placing '.' from f + 1 for 1);
+  if lp = 'k' and abs(t - f) = 2 then
+    if t > f then nb := overlay(nb placing substr(nb, f + 4, 1) from f + 2 for 1); nb := overlay(nb placing '.' from f + 4 for 1);
+    else nb := overlay(nb placing substr(nb, f - 3, 1) from f for 1); nb := overlay(nb placing '.' from f - 3 for 1); end if;
+  end if;
+  return nb;
+end $$;
+
+create or replace function public.chess_legal(b text, w boolean, ep int, cr text)
+returns int[] language plpgsql immutable as $$
+declare res int[] := '{}'; out int[] := '{}'; sq int; p text; lp text; r int; c int; d int[]; k int; q text; dir int; t int; m int; nb text;
+begin
+  for sq in 0 .. 63 loop
+    p := substr(b, sq + 1, 1);
+    if p = '.' or (p = upper(p)) <> w then continue; end if;
+    lp := lower(p); r := sq / 8; c := sq % 8;
+    if lp = 'p' then
+      dir := case when w then -1 else 1 end;
+      if chess_at(b, r + dir, c) = '.' then
+        res := res || (sq * 64 + (r + dir) * 8 + c);
+        if r = (case when w then 6 else 1 end) and chess_at(b, r + 2 * dir, c) = '.' then res := res || (sq * 64 + (r + 2 * dir) * 8 + c); end if;
+      end if;
+      foreach k in array array[-1, 1] loop
+        q := chess_at(b, r + dir, c + k); t := (r + dir) * 8 + c + k;
+        if q not in ('.', '#') and (q = upper(q)) <> w then res := res || (sq * 64 + t);
+        elsif q = '.' and t = ep then res := res || (sq * 64 + t); end if;
+      end loop;
+    elsif lp in ('n', 'k') then
+      foreach d slice 1 in array (case when lp = 'n' then array[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]
+                                       else array[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]] end) loop
+        q := chess_at(b, r + d[1], c + d[2]);
+        if q = '.' or (q <> '#' and (q = upper(q)) <> w) then res := res || (sq * 64 + (r + d[1]) * 8 + c + d[2]); end if;
+      end loop;
+    else
+      foreach d slice 1 in array array[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]] loop
+        if lp = 'r' and d[1] <> 0 and d[2] <> 0 then continue; end if;
+        if lp = 'b' and (d[1] = 0 or d[2] = 0) then continue; end if;
+        k := 1;
+        loop
+          q := chess_at(b, r + d[1] * k, c + d[2] * k);
+          exit when q = '#';
+          t := (r + d[1] * k) * 8 + c + d[2] * k;
+          if q = '.' then res := res || (sq * 64 + t);
+          else
+            if (q = upper(q)) <> w then res := res || (sq * 64 + t); end if;
+            exit;
+          end if;
+          k := k + 1;
+        end loop;
+      end loop;
+    end if;
+  end loop;
+  -- Rochade
+  if w and substr(b, 61, 1) = 'K' then
+    if strpos(cr, 'K') > 0 and substr(b, 62, 2) = '..' and substr(b, 64, 1) = 'R'
+       and not chess_attacked(b, 60, false) and not chess_attacked(b, 61, false) and not chess_attacked(b, 62, false) then res := res || (60 * 64 + 62); end if;
+    if strpos(cr, 'Q') > 0 and substr(b, 58, 3) = '...' and substr(b, 57, 1) = 'R'
+       and not chess_attacked(b, 60, false) and not chess_attacked(b, 59, false) and not chess_attacked(b, 58, false) then res := res || (60 * 64 + 58); end if;
+  end if;
+  if not w and substr(b, 5, 1) = 'k' then
+    if strpos(cr, 'k') > 0 and substr(b, 6, 2) = '..' and substr(b, 8, 1) = 'r'
+       and not chess_attacked(b, 4, true) and not chess_attacked(b, 5, true) and not chess_attacked(b, 6, true) then res := res || (4 * 64 + 6); end if;
+    if strpos(cr, 'q') > 0 and substr(b, 2, 3) = '...' and substr(b, 1, 1) = 'r'
+       and not chess_attacked(b, 4, true) and not chess_attacked(b, 3, true) and not chess_attacked(b, 2, true) then res := res || (4 * 64 + 2); end if;
+  end if;
+  -- nur Züge, nach denen der eigene König nicht im Schach steht
+  foreach m in array res loop
+    nb := chess_apply(b, m / 64, m % 64, ep);
+    if not chess_attacked(nb, strpos(nb, case when w then 'K' else 'k' end) - 1, not w) then out := out || m; end if;
+  end loop;
+  return out;
+end $$;
+
+-- Ein Zug: Schere(0)/Stein(1)/Papier(2), ein Feld (0-8), eine Spalte (0-6) oder beim Schach von * 64 + nach
 create or replace function public.sp_duel_move(p_token uuid, p_id uuid, p_move int)
 returns json language plpgsql security definer set search_path = public as $$
 declare me players; d duels; s int; g jsonb; bd int[]; pa int; pb int; w int; sa int; sb int;
   lines int[][] := array[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
   i int; r int; c int; dr int; dc int; k int; win int := -1; wl int[]; cells int[]; isfull boolean;
+  cb text; cw boolean; ow boolean; ncr text; nep int; cap boolean; lp text; rest text; cf int; ct int; hm int; chk boolean; cmv int[];
 begin
   me := duel_me(p_token);
   d := duel_mine(me, p_id);
@@ -483,6 +597,41 @@ begin
   end if;
 
   if d.turn <> s then raise exception 'duel_not_turn'; end if;
+
+  if d.mode = 'chess' then
+    cw := (s = (g->>'wh')::int); cb := g->>'b'; nep := (g->>'ep')::int; ncr := g->>'cr';
+    if p_move is null or not (p_move = any (chess_legal(cb, cw, nep, ncr))) then raise exception 'duel_bad_move'; end if;
+    cf := p_move / 64; ct := p_move % 64; lp := lower(substr(cb, cf + 1, 1));
+    cap := substr(cb, ct + 1, 1) <> '.' or (lp = 'p' and ct = nep);
+    cb := chess_apply(cb, cf, ct, nep);
+    if cf = 60 or ct = 60 then ncr := translate(ncr, 'KQ', ''); end if;
+    if cf = 63 or ct = 63 then ncr := translate(ncr, 'K', ''); end if;
+    if cf = 56 or ct = 56 then ncr := translate(ncr, 'Q', ''); end if;
+    if cf = 4 or ct = 4 then ncr := translate(ncr, 'kq', ''); end if;
+    if cf = 7 or ct = 7 then ncr := translate(ncr, 'k', ''); end if;
+    if cf = 0 or ct = 0 then ncr := translate(ncr, 'q', ''); end if;
+    nep := case when lp = 'p' and abs(ct - cf) = 16 then (cf + ct) / 2 else -1 end;
+    hm := case when cap or lp = 'p' then 0 else coalesce((g->>'hm')::int, 0) + 1 end;
+    ow := not cw;
+    chk := chess_attacked(cb, strpos(cb, case when ow then 'K' else 'k' end) - 1, cw);
+    cmv := chess_legal(cb, ow, nep, ncr);
+    rest := translate(cb, '.Kk', '');
+    g := g || jsonb_build_object('b', cb, 'cr', ncr, 'ep', nep, 'hm', hm, 'n', coalesce((g->>'n')::int, 0) + 1,
+      'lm', jsonb_build_array(cf, ct), 'chk', chk, 'cap', cap);
+    if coalesce(array_length(cmv, 1), 0) = 0 then
+      if chk then
+        update duels set game = g || '{"mate":true}'::jsonb, state = 'done', winner = s, reason = 'win', ver = ver + 1 where id = d.id returning * into d;
+      else
+        update duels set game = g || '{"stale":true}'::jsonb, state = 'done', winner = 2, reason = 'draw', ver = ver + 1 where id = d.id returning * into d;
+      end if;
+    elsif rest = '' or rest in ('N', 'B', 'n', 'b') or hm >= 100 then
+      update duels set game = g || '{"nomat":true}'::jsonb, state = 'done', winner = 2, reason = 'draw', ver = ver + 1 where id = d.id returning * into d;
+    else
+      update duels set game = g, turn = 1 - s, deadline = now() + interval '90 seconds', ver = ver + 1 where id = d.id returning * into d;
+    end if;
+    return duel_view(d, s);
+  end if;
+
   select array_agg(x::int order by o) into bd from jsonb_array_elements_text(g->'b') with ordinality t(x, o);
 
   if d.mode = 'ttt' then

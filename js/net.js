@@ -223,7 +223,7 @@
   });
   N.BOT = 'Schafbot';
   var LINES3 = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
-  var RPS_MS = 20000, TURN_MS = 30000, START_MS = 3500;
+  var RPS_MS = 20000, TURN_MS = 30000, CHESS_MS = 90000, START_MS = 3500;
   function c4Win(b, idx, s) {
     var r = Math.floor(idx / 7), c = idx % 7, dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
     for (var d = 0; d < 4; d++) for (var k = -3; k <= 0; k++) {
@@ -270,9 +270,9 @@
     start: function (d) {
       var f = Math.random() < 0.5 ? 0 : 1, now = Date.now();
       d.state = 'play'; d.start_at = now + START_MS;
-      d.game = d.mode === 'rps' ? { pa: -1, pb: -1, sa: 0, sb: 0, round: 1 } : d.mode === 'ttt' ? { b: fill(9), g: 1, first: f, lm: -1 } : { b: fill(42), lm: -1 };
+      d.game = d.mode === 'rps' ? { pa: -1, pb: -1, sa: 0, sb: 0, round: 1 } : d.mode === 'ttt' ? { b: fill(9), g: 1, first: f, lm: -1 } : d.mode === 'chess' ? SI.chess.init(f) : { b: fill(42), lm: -1 };
       d.turn = d.mode === 'rps' ? null : f;
-      d.deadline = now + START_MS + (d.mode === 'rps' ? RPS_MS : TURN_MS);
+      d.deadline = now + START_MS + (d.mode === 'rps' ? RPS_MS : d.mode === 'chess' ? CHESS_MS : TURN_MS);
     },
     move: function (d, s, mv) {
       var g = d.game, now = Date.now();
@@ -292,6 +292,11 @@
         d.ver++; return;
       }
       if (d.turn !== s) throw new Error('duel_not_turn');
+      if (d.mode === 'chess') {
+        var cr = SI.chess.play(g, s, mv); d.game = cr.g;
+        if (cr.res === null) { d.turn = 1 - s; d.deadline = now + CHESS_MS; d.ver++; } else DL.end(d, cr.res, cr.res === 2 ? 'draw' : 'win');
+        return;
+      }
       var b = g.b, idx, wl;
       if (d.mode === 'ttt') {
         if (!(mv >= 0 && mv <= 8) || b[mv] >= 0) throw new Error('duel_bad_move');
@@ -331,6 +336,7 @@
     },
     botMove: function (d, s) {
       if (d.mode === 'rps') return Math.floor(Math.random() * 3);
+      if (d.mode === 'chess') return SI.chess.bot(d.game, s);
       var b = d.game.b, free = [], i, t;
       if (d.mode === 'ttt') {
         for (i = 0; i < 9; i++) if (b[i] < 0) free.push(i);
@@ -402,7 +408,7 @@
       return LD.act(tok, id, function (d, s) {
         if (d.state !== 'setup') throw new Error('duel_locked');
         var ch = false, key = s === 0 ? 'a_stake' : 'b_stake';
-        if (mode != null) { if (!/^(rps|ttt|c4)$/.test(mode)) throw new Error('bad_amount'); if (mode !== d.mode) { ch = true; d.mode = mode; d.mode_by = s; } }
+        if (mode != null) { if (!/^(rps|ttt|c4|chess)$/.test(mode)) throw new Error('bad_amount'); if (mode !== d.mode) { ch = true; d.mode = mode; d.mode_by = s; } }
         if (stake != null) { var st = cleanStake(stake); if (N.stakeKey(st) !== N.stakeKey(d[key])) { ch = true; d[key] = st; } }
         if (ch) { d.a_ready = d.b_ready = false; d.ver++; }
       });

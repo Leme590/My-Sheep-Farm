@@ -723,7 +723,7 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 .dulv{padding:6px 12px 8px;font-size:14px}
 .ducard{background:#fff;border:2.5px solid var(--out);box-shadow:0 3px 0 var(--out);border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
 .ducard h3{font-size:18px}
-.dumodes{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dumodes{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .dumode{border:2.5px solid var(--out);border-radius:16px;background:#f3f6ee;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 3px 0 var(--out);min-width:0}
 .dumode span{font-size:30px;line-height:1.1}
 .dumode b{font-family:var(--display);font-weight:400;font-size:14px;line-height:1.1;text-align:center}
@@ -878,6 +878,30 @@ body.induel .hud,body.induel .nav,body.induel .zoom,body.induel #merchant{visibi
 @keyframes duturn{50%{transform:scale(1.06)}}
 @keyframes drop{from{transform:translateY(-140px)}}
 @keyframes duwin{to{filter:brightness(1.35)}}
+/* Schaf-Schach */
+.chb{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);aspect-ratio:1;width:min(400px,100%);border:4px solid var(--out);border-radius:12px;overflow:hidden;box-shadow:0 4px 0 var(--out);background:#6b4a2a}
+.chq{position:relative;width:100%;height:100%;overflow:hidden;box-shadow:none;transform:none;border:0;border-radius:0;padding:0;margin:0;background:#f4e7c4;display:grid;place-items:center;min-width:0;cursor:default}
+.chq.dk{background:#7fb35a}
+.chq:disabled{opacity:1;cursor:default;filter:none}
+.chb.myturn .chq:not(:disabled){cursor:pointer}
+.chq img{position:absolute;left:2%;top:2%;width:96%;height:96%;object-fit:contain;z-index:1;pointer-events:none;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+.chq.lm{background:#ffe680}.chq.lm.dk{background:#d8c84a}
+.chq.sel{background:#7fd3ff!important;box-shadow:inset 0 0 0 3px #1a7fc8}
+.chq.sel img{animation:chhop .5s ease-in-out infinite alternate}
+@keyframes chhop{to{transform:translateY(-10%)}}
+.chq.to::after{content:'';position:absolute;width:32%;height:32%;border-radius:50%;background:#3fbf3a;box-shadow:0 0 0 2px var(--out);z-index:2}
+.chq.cap{background:#ff9a8a!important}
+.chq.cap::after{content:'';position:absolute;inset:4%;border-radius:50%;border:4px solid #e0302a;z-index:2}
+.chq.chk{background:radial-gradient(#ff5a4a,#ff9a6a 60%,#f4e7c4)!important;animation:duwin .5s ease-in-out infinite alternate}
+.chq.mv img{animation:tpop .35s cubic-bezier(.2,1.8,.4,1)}
+.chr,.chf{position:absolute;font-style:normal;font-size:9px;font-weight:900;color:rgba(42,26,18,.55);z-index:0;line-height:1}
+.chr{left:2px;top:2px}.chf{right:2px;bottom:1px}
+.chtk{display:flex;flex-wrap:wrap;justify-content:center;min-height:22px;width:100%;gap:0}
+.chtk img{width:22px;height:22px;object-fit:contain;margin:0 -3px}
+.chchk{margin:0;font-family:var(--display);font-size:22px;color:#e0302a;text-shadow:0 2px 0 #fff;animation:duturn .8s ease-in-out infinite}
+.chchk.mate{font-size:30px;color:#c8102e}
+.chhint{margin:0;font-size:13px;font-weight:800;color:var(--muted);text-align:center}
+.dumode span img{height:36px;width:36px;object-fit:contain;vertical-align:middle}
 .disc{display:inline-block;width:18px;height:18px;border-radius:50%;vertical-align:-3px;border:2px solid var(--out)}
 .dutime{display:flex;flex-direction:column;gap:3px;align-items:center}
 .dutime .bar{width:100%}.dutime .bar.low i{background:linear-gradient(#ff8a7a 0 45%,#e0342a 45%)}
@@ -1343,6 +1367,7 @@ body.inx #toasts{z-index:45}
 <script src="js/art.js"></script>
 <script src="js/style.js"></script>
 <script src="js/jungle-art.js"></script>
+<script src="js/chess.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/net.js"></script>
 <script src="js/game.js"></script>
