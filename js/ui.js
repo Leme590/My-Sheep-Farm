@@ -542,10 +542,10 @@
       var n = Object.keys(G.S.found).length;
       var sd = G.setsDone().length;
       h += '<div class="bar"><i style="width:' + (n / SI.TYPES.length * 100) + '%"></i></div><p class="hint num">' + n + ' von ' + SI.TYPES.length + ' Schafen gefunden. Geheime Schafe gibt es nur durch Zucht.</p>';
-      h += '<div class="card setbonus"><b>✨ Sammel-Bonus: +' + Math.round(G.setBonus() * 100) + ' % Geld</b><p class="hint">Für jede Seltenheit, bei der du alle Schafe gefunden hast, bekommst du +10 % Geld.</p></div>';
+      h += '<div class="card setbonus"><b>✨ Sammel-Bonus: +' + Math.round(G.setBonus() * 100) + ' % Geld</b><p class="hint">Für jede Seltenheit, bei der du alle Schafe gefunden hast, bekommst du +10 % Geld. Wenn du alle geheimen Schafe entdeckt hast, bekommst du sogar +100 % Geld!</p></div>';
       SI.RORDER.forEach(function (r) {
         var all = SI.TYPES.filter(function (t) { return t.r === r; }), got = all.filter(function (t) { return G.S.found[t.id]; }).length, done = got === all.length;
-        h += '<h3 class="rc-' + r + ' sethd" style="font-size:17px">' + SI.RAR[r].n + ' <small class="num' + (done ? ' setok' : '') + '">' + (done && r !== 'u' ? '✓ +10 % Geld' : got + ' / ' + all.length) + '</small></h3><div class="grid">';
+        h += '<h3 class="rc-' + r + ' sethd" style="font-size:17px">' + SI.RAR[r].n + ' <small class="num' + (done ? ' setok' : '') + '">' + (done && r !== 'u' ? '✓ +' + Math.round(G.setBonusOf(r) * 100) + ' % Geld' : got + ' / ' + all.length + (r === 's' ? ' · alle: +100 % Geld' : '')) + '</small></h3><div class="grid">';
         all.sort(function (a, b) { return a.inc - b.inc; }).forEach(function (t) { // wenigstes Geld zuerst
           var f = G.S.found[t.id], rec = t.r === 's' && f ? recipeOf(t.id) : null;
           h += '<div class="tile"><img src="' + A.sheepURL(t, !f) + '" alt=""><b>' + (f ? esc(t.n) : '???') + '</b><small class="num">' + (t.special ? (f ? '+10 % Geld für immer' : 'Belohnung für alle 4 Artefakte') : f ? '+' + fmt(t.inc) + '/Sek. · ' + esc(t.pen.name) : (t.r === 's' ? 'Geheim! Nur durch Zucht' : 'noch nicht gefunden')) + '</small>' +

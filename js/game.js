@@ -141,7 +141,9 @@
   G.SET_BONUS = 0.1;
   G.rarDone = function (r) { var f = G.S.found || {}; return SI.TYPES.every(function (t) { return t.r !== r || f[t.id]; }); };
   G.setsDone = function () { return SI.RORDER.filter(function (r) { return r !== 'u' && G.rarDone(r); }); }; // Uralt (Wächter) gibt schon selbst +10 %
-  G.setBonus = function () { return G.SET_BONUS * G.setsDone().length; };
+  // Kai 17.11.2026: alle geheimen Schafe zusammen geben sogar +100 %
+  G.setBonusOf = function (r) { return r === 's' ? 1 : G.SET_BONUS; };
+  G.setBonus = function () { return G.setsDone().reduce(function (a, r) { return a + G.setBonusOf(r); }, 0); };
   /* ---------- Verlorene Artefakte (Dschungel-Event, Kai) ---------- */
   SI.ARTS = [
     // Kai: jedes Artefakt hat eine Farbe und einen Hinweis, wo man es grob findet
@@ -414,8 +416,8 @@
   G.recipeKey = function (a, b) { return [a, b].sort().join('+'); };
   G.breedCost = function (a, b) { return Math.ceil(30 * (T[a].inc + T[b].inc)); };
   G.breedTime = function (a, b) {
-    var f = { c: 1, r: 2, e: 4, l: 8, m: 12, x: 16, s: 10, u: 16 };
-    return 30 * Math.max(f[T[a].r] || 1, f[T[b].r] || 1) * (1 - G.cardBonus('hirte') / 100) * (G.hasArt('maske') ? 0.5 : 1);
+    var f = { c: 1, r: 2, e: 4, l: 8, m: 12, x: 16, s: 10, u: 16 }, res = T[SI.RECIPES[G.recipeKey(a, b)]];
+    return (res && res.bt ? res.bt * 60 : 30 * Math.max(f[T[a].r] || 1, f[T[b].r] || 1)) * (1 - G.cardBonus('hirte') / 100) * (G.hasArt('maske') ? 0.5 : 1);
   };
   G.startBreed = function (a, b) {
     if (G.S.breed) return false;
