@@ -127,6 +127,73 @@
     });
   };
 
+  /* ---------- Neue geheime Schafe (Kai, 17.11.2026) ---------- */
+  L.eiscreme = { pat: 'sprinkles', mood: 'lash', head: 'icecream' };
+  L.paradies = { pat: 'feathers', mood: 'happy', back: 'tailfeathers', head: 'plume' };
+  L.polar = { pat: 'stars', mood: 'sleepy', back: 'aurora', head: 'scarf' };
+  L.schatzsucher = { pat: 'patches', mood: 'happy', head: 'explorer' };
+  L.einhorn = { pat: 'shine', mood: 'lash', back: 'wings', head: 'unicorn' };
+  L.komet = { pat: 'stars', mood: 'star', back: 'comettail', head: 'flame' };
+  L.geisterkapitaen = { pat: 'wisps', mood: 'patch', head: 'ghostcap' };
+  L.schatten = { pat: 'wisps', mood: 'cool', head: 'catears' };
+  L.donner = { pat: 'zigzag', mood: 'angry', back: 'stormwings', head: 'horns' };
+  L.finsternis = { pat: 'stars', mood: 'cool', back: 'sunrays', head: 'moon' };
+  L.inka = { pat: 'glyphs', mood: 'star', back: 'sunrays', head: 'templecrown' };
+  L.juwel = { pat: 'facets', mood: 'star', back: 'emeralds', head: 'diamond' };
+  L.federdrache = { pat: 'feathers2', mood: 'angry', back: 'dragon', head: 'plume' };
+  H.icecream = function (g) { // Waffel mit zwei Kugeln und Kirsche
+    g.beginPath(); g.moveTo(14.5, -31); g.lineTo(22.5, -31); g.lineTo(18.5, -24); g.closePath(); sfill(g, '#e0a050', 1.2);
+    line(g, [16, -30, 19.5, -26.5], '#b07a30', 0.7); line(g, [21, -30, 17.5, -26.5], '#b07a30', 0.7);
+    g.beginPath(); g.arc(18.5, -33, 4.4, 0, TAU); sfill(g, '#ffb3cf', 1.2);
+    g.beginPath(); g.arc(18.5, -38.5, 3.8, 0, TAU); sfill(g, '#b9ecff', 1.2);
+    g.fillStyle = '#fff'; circ(g, 17, -40, 1); circ(g, 17, -34.5, 1);
+    g.beginPath(); g.arc(19, -43.6, 1.8, 0, TAU); sfill(g, '#e8202e', 1); line(g, [19.5, -45, 21.5, -48], '#3a8a2a', 0.9);
+  };
+  H.unicorn = function (g) { // goldenes gedrehtes Horn und bunte Mähne
+    ['#ff9fd8', '#b9a6ff', '#8fe0ff'].forEach(function (c, i) { g.beginPath(); g.ellipse(12 - i * 1.5, -27 + i * 3.5, 2.6, 4.4, -0.6, 0, TAU); sfill(g, c, 1); });
+    g.beginPath(); g.moveTo(16.5, -30); g.lineTo(21.5, -48); g.lineTo(21.5, -30); g.closePath(); sfill(g, '#ffe27a', 1.3);
+    for (var i = 0; i < 4; i++) line(g, [17 + i * 0.9, -33 - i * 3.6, 21.5, -35 - i * 3.6], '#d8a020', 0.9);
+    g.fillStyle = '#fff'; circ(g, 20.6, -44, 0.8);
+  };
+  H.explorer = function (g) { // Tropenhelm von einem Schatzsucher
+    g.beginPath(); g.ellipse(18.5, -30.5, 11, 2.8, -0.05, 0, TAU); sfill(g, '#d8c08a', 1.2);
+    g.beginPath(); g.ellipse(18.5, -31, 7, 7, 0, Math.PI, TAU); g.closePath(); sfill(g, '#e8d3a0', 1.2);
+    g.fillStyle = '#8a5a2a'; g.fillRect(11.6, -33.4, 13.8, 2);
+    g.fillStyle = '#ffd23f'; circ(g, 18.5, -37.5, 1.1);
+  };
+  H.ghostcap = function (g) { // durchsichtiger Kapitänshut mit Geister-Feder
+    g.globalAlpha = 0.85;
+    g.beginPath(); g.moveTo(12, -37); g.quadraticCurveTo(6, -44, 10, -49); g.quadraticCurveTo(12, -43, 16, -38); g.closePath(); sfill(g, '#bfffe8', 1);
+    g.beginPath(); g.moveTo(8.5, -30.5); g.quadraticCurveTo(11, -43, 18.5, -42); g.quadraticCurveTo(26, -43, 28.5, -30.5); g.quadraticCurveTo(18.5, -35, 8.5, -30.5); g.closePath(); sfill(g, '#2c6a5e', 1.3);
+    line(g, [8.5, -30.5, 18.5, -34.6, 28.5, -30.5], '#7fffd0', 1.4);
+    g.fillStyle = '#7fffd0'; circ(g, 18.5, -38, 2.2);
+    g.globalAlpha = 1;
+  };
+  B.aurora = function (g, t, front) { // Polarlicht-Bänder hinter dem Schaf
+    if (front) return;
+    [['#3fe0b0', -33], ['#7a8aff', -37], ['#d07aff', -41]].forEach(function (p) {
+      g.beginPath(); g.moveTo(-30, p[1] + 8); g.bezierCurveTo(-18, p[1] - 4, -6, p[1] + 10, 8, p[1]); g.bezierCurveTo(12, p[1] - 3, 14, p[1] + 1, 16, p[1] - 1);
+      g.strokeStyle = OUT; g.lineWidth = 5.4; g.lineCap = 'round'; g.stroke(); g.strokeStyle = p[0]; g.lineWidth = 3.4; g.stroke();
+    });
+  };
+  B.comettail = function (g, t, front) { // Feuerschweif wie ein Komet
+    if (front) return;
+    [['#7a3cff', 13, 0], ['#ff8a2b', 10, 1], ['#ffe9a0', 6, 2]].forEach(function (p) {
+      g.beginPath(); g.moveTo(-10, -28 + p[2] * 2); g.quadraticCurveTo(-28, -34, -37, -43 + p[2] * 3); g.quadraticCurveTo(-27, -22, -12, -8 - p[2] * 2); g.closePath();
+      sfill(g, p[0], p[2] ? 0 : 1.4);
+    });
+    g.fillStyle = '#fff'; circ(g, -29, -38, 1.2); circ(g, -33, -34, 0.9); circ(g, -24, -32, 0.8);
+  };
+  B.stormwings = function (g, t, front) { // blaue Donnerflügel mit gelben Blitzspitzen
+    if (front) return;
+    g.save(); g.translate(-2, -30); g.rotate(-0.35);
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(-10, -16); g.lineTo(-14, -6); g.lineTo(-22, -10); g.lineTo(-20, 0); g.lineTo(-26, 0); g.lineTo(-14, 6); g.closePath();
+    sfill(g, '#2a6ad8', 1.4);
+    line(g, [-10, -16, -12, -9, -8, -8], '#ffe24a', 1.4);
+    g.restore();
+    g.beginPath(); g.moveTo(-26, -40); g.lineTo(-30, -32); g.lineTo(-26, -32); g.lineTo(-29, -24); g.lineTo(-22, -34); g.lineTo(-26, -34); g.closePath(); sfill(g, '#ffe24a', 1);
+  };
+
   // Zaunfarben der neuen Seltenheiten
   if (A.FENCE) {
     A.FENCE.x = { post: '#1f9a4a', rail: '#7fe0a0', top: '#0f6a30' };

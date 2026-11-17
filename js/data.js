@@ -109,6 +109,33 @@ window.SI = window.SI || {};
       pen: { name: 'Uralter Urwald', g: '#2f6a2a', s: '#4a8a3a', sk: 'dot', props: ['jtree', 'mushroom', 'jtree'] } },
     { id: 'tarn', n: 'Tarnschaf', r: 's', inc: 120000000, jg: 1, w: ['#4a6a3a', '#7a9a4a', '#3a4a2a', '#8aaa5a', '#5a7a3a'], hard: 1, f: '#0f1a0a',
       pen: { name: 'Tarnversteck', g: '#3a5a2a', s: '#5a7a3a', sk: 'dot', props: ['fern', 'bamboo', 'fern'], glow: '#9aff6a' } },
+    // Neue geheime Schafe (Kai, 17.11.2026): Eltern aus verschiedenen Seltenheiten, das beste bringt 1,5B pro Sekunde
+    { id: 'eiscreme', n: 'Eiscremeschaf', r: 's', inc: 4000, w: ['#fff4e0', '#ffc3d8', '#b9ecff'], f: '#6b3a4a',
+      pen: { name: 'Eisdiele', g: '#ffe3ec', s: '#b9ecff', sk: 'dot', props: ['lolli:#ff6fae', 'ice', 'lolli:#5ab8ff'] } },
+    { id: 'paradies', n: 'Paradiesvogelschaf', r: 's', inc: 9000, w: ['#ffd23f', '#ff7a4a', '#e8322e', '#3fae4a'], f: '#3a1a0a',
+      pen: { name: 'Vogelparadies', g: '#5fae3e', s: '#ffb02e', sk: 'dot', props: ['palm', 'orchid', 'palm'] } },
+    { id: 'polar', n: 'Polarlichtschaf', r: 's', inc: 180000, w: ['#3fe0b0', '#3a6ad0', '#7a3cc8'], f: '#0c1630', stars: 1,
+      pen: { name: 'Polarnacht', g: '#1c2a50', s: '#3fe0b0', sk: 'star', props: ['pine', 'ice', 'pine'], glow: '#3fe0b0' } },
+    { id: 'schatzsucher', n: 'Schatzsucherschaf', r: 's', inc: 250000, w: ['#e8d3a0', '#c8a060', '#8a6a3a'], f: '#3a2410',
+      pen: { name: 'Schatzkarte', g: '#e8d3a0', s: '#c8a060', sk: 'dot', props: ['chest', 'palm', 'coin'], glow: '#ffd23f' } },
+    { id: 'einhorn', n: 'Einhornschaf', r: 's', inc: 15000000, w: ['#ffffff', '#ffe0f4', '#d8e8ff'], f: '#f0d8ff',
+      pen: { name: 'Einhornwiese', g: 'rainbow', s: '#ffffff', sk: 'star', props: ['cloud:#ffffff', 'flower:#ff9fd8', 'cloud:#ffffff'], glow: '#ff9fd8' } },
+    { id: 'komet', n: 'Kometenschaf', r: 's', inc: 20000000, w: ['#ffe9a0', '#ff8a2b', '#7a3cff'], f: '#1b1550', stars: 1,
+      pen: { name: 'Kometenbahn', g: '#1b1550', s: '#ffb02e', sk: 'star', props: ['planet', 'fire', 'planet'], glow: '#ff8a2b' } },
+    { id: 'geisterkapitaen', n: 'Geisterkapitänsschaf', r: 's', inc: 40000000, w: ['#e8fff6', '#9ff0d4', '#3a9a80'], f: '#103a30',
+      pen: { name: 'Geisterflotte', g: '#16302e', s: '#5fffc8', sk: 'dot', props: ['ghostlantern', 'shipwheel', 'ghostlantern'], glow: '#5fffc8' } },
+    { id: 'schatten', n: 'Schattenschaf', r: 's', inc: 60000000, w: ['#5a4a8a', '#26203f', '#0c0a18'], f: '#05040a',
+      pen: { name: 'Schattenreich', g: '#16122a', s: '#7a5aff', sk: 'star', props: ['rock:#2a2440', 'crystal:#9a7aff', 'rock:#241f38'], glow: '#9a7aff' } },
+    { id: 'donner', n: 'Donnerdrachenschaf', r: 's', inc: 80000000, w: ['#fff36b', '#3fa8ff', '#1a3a8a'], f: '#0a1430', bolt: 1,
+      pen: { name: 'Donnerberg', g: '#2a3450', s: '#ffe24a', sk: 'stripe', props: ['rock:#3a4060', 'crystal:#ffe24a', 'rock:#454b70'], glow: '#ffe24a' } },
+    { id: 'finsternis', n: 'Finsternisschaf', r: 's', inc: 150000000, w: ['#2a2240', '#14101f', '#ffb000'], f: '#08060f', sun: 1,
+      pen: { name: 'Sonnenfinsternis', g: '#1a1428', s: '#ffd23f', sk: 'star', props: ['sunflower', 'planet', 'sunflower'], glow: '#ffb000' } },
+    { id: 'inka', n: 'Inka-Goldschaf', r: 's', inc: 1100000000, w: ['#fff6c0', '#ffd23f', '#c98a12', '#2fd08a'], f: '#3a2400',
+      pen: { name: 'Goldene Stadt', g: '#c8a65a', s: '#ffe9a0', sk: 'dot', props: ['ruin', 'coin', 'ruin'], glow: '#ffd23f' } },
+    { id: 'juwel', n: 'Juwelenschaf', r: 's', inc: 1300000000, w: ['#ffffff', '#9fffd0', '#7fd8ff', '#ff9ad8'], f: '#1f3a4a',
+      pen: { name: 'Juwelenkammer', g: '#d8fff0', s: '#7fd8ff', sk: 'dot', props: ['diamond', 'crystal:#3fe09a', 'diamond'], glow: '#7fd8ff' } },
+    { id: 'federdrache', n: 'Federdrachenschaf', r: 's', inc: 1500000000, w: ['#5ff0b0', '#1fa0d0', '#e8322e', '#ffd23f'], f: '#06201e', horns: 1,
+      pen: { name: 'Himmelstempel', g: '#2f6a5a', s: '#5ff0b0', sk: 'dot', props: ['ruin', 'fire', 'jtree'], glow: '#5ff0b0' } },
     // Der Dschungelwächter: nur für alle 4 Verlorenen Artefakte. Bleibt für immer, auch nach einem Rebirth.
     { id: 'waechter', n: 'Dschungelwächter', r: 'u', inc: 0, special: 1, w: ['#fff6c0', '#ffd23f', '#2fd08a'], f: '#2a1a00',
       pen: { name: 'Goldener Tempel', g: '#c8a65a', s: '#ffe9a0', sk: 'dot', props: ['ruin', 'coin', 'ruin'], glow: '#ffd23f' } },
@@ -124,7 +151,11 @@ window.SI = window.SI || {};
   ];
   SI.T = {};
   SI.TYPES.forEach(function (t) { SI.T[t.id] = t; });
-  SI.RECIPES = { 'eis+feuer': 'dampf', 'moos+nacht': 'zebra', 'blitz+kristall': 'gewitter', 'gold+kristall': 'diamant', 'drache+feuer': 'lava', 'galaxie+regen': 'sonne', 'chili+guac': 'taco', 'gold+pirat': 'schatz', 'faultier+gorilla': 'urwald', 'chamaeleon+panther': 'tarn' };
+  SI.RECIPES = { 'eis+feuer': 'dampf', 'moos+nacht': 'zebra', 'blitz+kristall': 'gewitter', 'gold+kristall': 'diamant', 'drache+feuer': 'lava', 'galaxie+regen': 'sonne', 'chili+guac': 'taco', 'gold+pirat': 'schatz', 'faultier+gorilla': 'urwald', 'chamaeleon+panther': 'tarn',
+    // Kai 17.11.2026: Mischungen aus verschiedenen Seltenheiten
+    'eis+rosa': 'eiscreme', 'papagei+tukan': 'paradies', 'eis+nacht': 'polar', 'kapitaen+schatz': 'schatzsucher', 'himmel+regen': 'einhorn',
+    'feuer+galaxie': 'komet', 'geist+kapitaen': 'geisterkapitaen', 'nacht+panther': 'schatten', 'blitz+drache': 'donner', 'nacht+sonne': 'finsternis',
+    'gold+tempel': 'inka', 'diamant+smaragd': 'juwel', 'drache+quetzal': 'federdrache' };
 
   // rb = ab welchem Rebirth die Kiste freigeschaltet ist
   SI.BOX = [
